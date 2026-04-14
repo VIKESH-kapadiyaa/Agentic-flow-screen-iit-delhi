@@ -28,16 +28,16 @@ function getWireStyle(fromId, toId, nodeStates) {
   const to = nodeStates[toId];
 
   if (to === 'running') {
-    return { stroke: '#6366f1', opacity: 1, glow: true, animate: true };
+    return { stroke: '#A259FF', opacity: 1, glow: true, animate: true };
   }
   if (from === 'completed' && to === 'completed') {
-    return { stroke: '#22c55e', opacity: 0.4, glow: false, animate: false };
+    return { stroke: '#DEF767', opacity: 0.4, glow: false, animate: false };
   }
   if (from === 'completed' || from === 'running') {
-    return { stroke: '#6366f1', opacity: 0.25, glow: false, animate: false };
+    return { stroke: '#A259FF', opacity: 0.25, glow: false, animate: false };
   }
   // idle — visible thin grey border
-  return { stroke: '#334155', opacity: 0.35, glow: false, animate: false };
+  return { stroke: '#46B1FF', opacity: 0.35, glow: false, animate: false };
 }
 
 // ── Initial node state factory ──────────────────────────────────────
@@ -104,6 +104,13 @@ const App = () => {
 
   const handleMouseMove = useCallback(
     (e) => {
+      // Glow logic: Track absolute mouse position on the container
+      if (canvasRef.current) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        canvasRef.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        canvasRef.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      }
+
       if (!isPanning) return;
       const dx = e.clientX - lastMousePos.current.x;
       const dy = e.clientY - lastMousePos.current.y;
@@ -338,7 +345,7 @@ const App = () => {
                 </feMerge>
               </filter>
               <marker
-                id="arrow-indigo"
+                id="arrow-purple"
                 viewBox="0 0 10 10"
                 refX="5"
                 refY="5"
@@ -346,10 +353,10 @@ const App = () => {
                 markerHeight="4"
                 orient="auto-start-reverse"
               >
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#6366f1" />
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#A259FF" />
               </marker>
               <marker
-                id="arrow-green"
+                id="arrow-lime"
                 viewBox="0 0 10 10"
                 refX="5"
                 refY="5"
@@ -357,7 +364,18 @@ const App = () => {
                 markerHeight="4"
                 orient="auto-start-reverse"
               >
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e" />
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#DEF767" />
+              </marker>
+              <marker
+                id="arrow-blue"
+                viewBox="0 0 10 10"
+                refX="5"
+                refY="5"
+                markerWidth="4"
+                markerHeight="4"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#46B1FF" />
               </marker>
             </defs>
 
@@ -377,7 +395,7 @@ const App = () => {
                   {style.glow && (
                     <path
                       d={path}
-                      stroke="#6366f1"
+                      stroke="#A259FF"
                       strokeWidth="8"
                       fill="none"
                       opacity={0.12}
@@ -393,16 +411,16 @@ const App = () => {
                     opacity={style.opacity}
                     className={style.animate ? 'wire-flow' : ''}
                     markerEnd={
-                      style.stroke === '#22c55e'
-                        ? 'url(#arrow-green)'
-                        : style.opacity > 0.3
-                        ? 'url(#arrow-indigo)'
-                        : undefined
+                      style.stroke === '#DEF767'
+                        ? 'url(#arrow-lime)'
+                        : style.stroke === '#A259FF'
+                        ? 'url(#arrow-purple)'
+                        : 'url(#arrow-blue)'
                     }
                   />
                   {/* Animated particle along active wires */}
                   {style.animate && (
-                    <circle r="3.5" fill="#818cf8" filter="url(#wire-glow)">
+                    <circle r="3.5" fill="#A259FF" filter="url(#wire-glow)">
                       <animateMotion dur="1s" repeatCount="indefinite" path={path} />
                     </circle>
                   )}
@@ -416,11 +434,11 @@ const App = () => {
               return (
                 <path
                   d={bridgePath}
-                  stroke="#22c55e"
+                  stroke="#DEF767"
                   strokeWidth="1.5"
                   fill="none"
                   opacity="0.3"
-                  markerEnd="url(#arrow-green)"
+                  markerEnd="url(#arrow-lime)"
                 />
               );
             })()}
@@ -439,12 +457,12 @@ const App = () => {
                 style={{ left: label.x, top: label.y, transform: 'translateX(-50%)' }}
               >
                 <div
-                  className={`text-[11px] font-extrabold tracking-[0.35em] phase-label ${
+                  className={`text-[11px] font-bold tracking-[0.4em] phase-label ${
                     allCompleted
-                      ? 'text-emerald-500/60'
+                      ? 'text-[#DEF767]/60'
                       : anyRunning
-                      ? 'text-indigo-400/80'
-                      : 'text-slate-700/70'
+                      ? 'text-[#A259FF]'
+                      : 'text-slate-600/50'
                   }`}
                 >
                   {label.name}
@@ -477,11 +495,11 @@ const App = () => {
               width: 420,
               height: 520,
               border: workflowResult
-                ? '1px solid rgba(34,197,94,0.2)'
+                ? '1px solid rgba(162,89,255,0.2)'
                 : '1px solid rgba(255,255,255,0.04)',
               boxShadow: workflowResult
-                ? '0 0 50px rgba(34,197,94,0.04), 0 4px 30px rgba(0,0,0,0.6)'
-                : '0 4px 20px rgba(0,0,0,0.5)',
+                ? '0 0 60px rgba(162,89,255,0.08), 0 8px 40px rgba(0,0,0,0.8)'
+                : '0 8px 32px rgba(0,0,0,0.6)',
             }}
           >
             {/* Preview Header */}
@@ -490,20 +508,20 @@ const App = () => {
               style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
             >
               <div className="flex items-center gap-2">
-                <Sparkles size={13} className="text-indigo-400" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                <Sparkles size={13} className="text-[#A259FF]" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#CEA3FF] font-display">
                   Visual Output
                 </span>
               </div>
               {workflowResult && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-mono text-slate-600">
+                  <span className="text-[8px] font-mono text-slate-500">
                     via {resultSource}
                   </span>
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full bg-red-400/50" />
-                    <div className="w-2 h-2 rounded-full bg-yellow-400/50" />
-                    <div className="w-2 h-2 rounded-full bg-green-400/50" />
+                    <div className="w-2 h-2 rounded-full bg-[#FF6A6A]/50" />
+                    <div className="w-2 h-2 rounded-full bg-[#DEF767]/50" />
+                    <div className="w-2 h-2 rounded-full bg-[#46B1FF]/50" />
                   </div>
                 </div>
               )}
@@ -555,13 +573,13 @@ const App = () => {
                 left: -6,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                background: '#0a0a0e',
-                border: `1.5px solid ${workflowResult ? '#22c55e' : '#1e293b'}`,
+                background: '#000000',
+                border: `1.5px solid ${workflowResult ? '#DEF767' : '#1e293b'}`,
               }}
             >
               <div
                 className="w-1 h-1 rounded-full"
-                style={{ background: workflowResult ? '#22c55e' : '#334155' }}
+                style={{ background: workflowResult ? '#DEF767' : '#334155' }}
               />
             </div>
           </div>

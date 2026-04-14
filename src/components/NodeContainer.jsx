@@ -12,10 +12,10 @@ const ICON_MAP = {
 };
 
 const PHASE_COLORS = {
-  1: { accent: '#818cf8', bg: 'rgba(99,102,241,0.06)' },   // indigo
-  2: { accent: '#a78bfa', bg: 'rgba(167,139,250,0.06)' },  // violet
-  3: { accent: '#f472b6', bg: 'rgba(244,114,182,0.06)' },   // pink
-  4: { accent: '#34d399', bg: 'rgba(52,211,153,0.06)' },    // emerald
+  1: { accent: '#46B1FF', bg: 'rgba(70,177,255,0.06)' },  // Azure (Discover)
+  2: { accent: '#CEA3FF', bg: 'rgba(206,163,255,0.06)' }, // Lavender (Define)
+  3: { accent: '#A259FF', bg: 'rgba(162,89,255,0.06)' },  // Purple (Develop)
+  4: { accent: '#DEF767', bg: 'rgba(222,247,103,0.06)' }, // Lime (Deliver)
 };
 
 const NodeContainer = ({ agent, state, onClick }) => {
@@ -32,7 +32,7 @@ const NodeContainer = ({ agent, state, onClick }) => {
   return (
     <div
       className={`absolute pointer-events-auto glass-node rounded-xl cursor-pointer
-        transition-all duration-300 hover:scale-[1.03] ${stateClass}`}
+        transition-all duration-400 hover:scale-[1.02] ${stateClass}`}
       style={{
         left: agent.x,
         top: agent.y,
@@ -43,17 +43,17 @@ const NodeContainer = ({ agent, state, onClick }) => {
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 pt-3 pb-2"
+        className="flex items-center justify-between px-4 pt-3.5 pb-2"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
             className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
             style={{ background: phaseColor.bg }}
           >
             <IconComponent size={13} style={{ color: phaseColor.accent }} />
           </div>
-          <h3 className="text-[11px] font-bold text-slate-200 truncate tracking-wide">
+          <h3 className="text-[11px] font-bold text-slate-100 truncate tracking-wide font-display">
             {agent.name}
           </h3>
         </div>
@@ -61,13 +61,13 @@ const NodeContainer = ({ agent, state, onClick }) => {
       </div>
 
       {/* Body */}
-      <div className="px-4 pt-2 pb-3">
-        <p className="text-[10px] text-slate-500 leading-relaxed">
+      <div className="px-4 pt-2.5 pb-3.5">
+        <p className="text-[10px] text-slate-500 leading-relaxed font-secondary">
           {agent.description}
         </p>
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2.5 flex items-center justify-between">
           <span
-            className="text-[8px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 rounded"
+            className="text-[8px] font-bold uppercase tracking-[0.2em] px-1.5 py-0.5 rounded"
             style={{
               color: phaseColor.accent,
               background: phaseColor.bg,
@@ -75,8 +75,8 @@ const NodeContainer = ({ agent, state, onClick }) => {
           >
             {agent.phaseName}
           </span>
-          <span className="text-[8px] text-slate-600 font-mono">
-            P{agent.phase}.{agent.diamondPos}
+          <span className="text-[8px] text-slate-600 font-mono tracking-tighter">
+            ID: {agent.id.toUpperCase()}
           </span>
         </div>
       </div>
@@ -89,14 +89,14 @@ const NodeContainer = ({ agent, state, onClick }) => {
           style={{
             left: NODE_WIDTH / 2 - 6,
             top: -6,
-            background: '#0a0a0e',
-            border: `1.5px solid ${state === 'running' ? phaseColor.accent : state === 'completed' ? '#22c55e' : '#1e293b'}`,
+            background: '#000000',
+            border: `1.5px solid ${state === 'running' ? '#A259FF' : state === 'completed' ? '#DEF767' : '#1e293b'}`,
           }}
         >
           <div
             className="w-1 h-1 rounded-full"
             style={{
-              background: state === 'running' ? phaseColor.accent : state === 'completed' ? '#22c55e' : '#334155',
+              background: state === 'running' ? '#A259FF' : state === 'completed' ? '#DEF767' : '#334155',
             }}
           />
         </div>
@@ -109,13 +109,13 @@ const NodeContainer = ({ agent, state, onClick }) => {
           style={{
             left: NODE_WIDTH / 2 - 6,
             bottom: -6,
-            background: '#0a0a0e',
-            border: `1.5px solid ${state === 'completed' ? '#22c55e' : '#1e293b'}`,
+            background: '#000000',
+            border: `1.5px solid ${state === 'completed' ? '#DEF767' : '#1e293b'}`,
           }}
         >
           <div
             className="w-1 h-1 rounded-full"
-            style={{ background: state === 'completed' ? '#22c55e' : '#334155' }}
+            style={{ background: state === 'completed' ? '#DEF767' : '#334155' }}
           />
         </div>
       )}
@@ -127,8 +127,8 @@ const NodeContainer = ({ agent, state, onClick }) => {
           style={{
             left: -6,
             top: NODE_HEIGHT / 2 - 6,
-            background: '#0a0a0e',
-            border: `1.5px solid ${state === 'running' ? phaseColor.accent : '#1e293b'}`,
+            background: '#000000',
+            border: `1.5px solid ${state === 'running' ? '#A259FF' : '#1e293b'}`,
           }}
         >
           <div className="w-1 h-1 rounded-full" style={{ background: '#334155' }} />
@@ -142,8 +142,8 @@ const NodeContainer = ({ agent, state, onClick }) => {
           style={{
             right: -6,
             top: NODE_HEIGHT / 2 - 6,
-            background: '#0a0a0e',
-            border: `1.5px solid ${state === 'completed' ? '#22c55e' : '#1e293b'}`,
+            background: '#000000',
+            border: `1.5px solid ${state === 'completed' ? '#DEF767' : '#1e293b'}`,
           }}
         >
           <div className="w-1 h-1 rounded-full" style={{ background: '#334155' }} />

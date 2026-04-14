@@ -28,60 +28,61 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay p-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
       onClick={onClose}
     >
       <div
-        className="glass rounded-2xl w-full max-w-md modal-content"
+        className="glass-node rounded-3xl w-full max-w-md modal-content overflow-hidden"
         style={{
-          border: '1px solid rgba(99,102,241,0.12)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 60px rgba(99,102,241,0.05)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 32px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-4"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+          className="flex items-center justify-between px-7 py-6"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(99,102,241,0.1)' }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#A259FF]/10 border border-[#A259FF]/20"
             >
-              <Key size={16} className="text-indigo-400" />
+              <Key size={18} className="text-[#A259FF]" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-200">API Configuration</h2>
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Bring Your Own Key — stored in localStorage
+              <h2 className="text-base font-bold text-white font-display">Neural Gateways</h2>
+              <p className="text-[10px] text-slate-500 font-secondary mt-0.5 tracking-wide">
+                Secure local storage for API credentials
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-500 hover:text-slate-300"
+            className="p-2.5 rounded-xl hover:bg-white/5 transition-all text-slate-500 hover:text-white"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-7 py-6 space-y-6">
           {/* OpenRouter Key */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                OpenRouter API Key
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#CEA3FF] font-primary">
+                OpenRouter Protocol
               </label>
               {status.openrouter ? (
-                <span className="flex items-center gap-1 text-[9px] text-emerald-400">
-                  <CheckCircle2 size={10} /> Connected
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-[#DEF767] uppercase tracking-wider">
+                  <div className="w-1 h-1 rounded-full bg-[#DEF767] shadow-[0_0_8px_#DEF767]" />
+                  Active
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-[9px] text-slate-600">
-                  <AlertCircle size={10} /> Not set
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-wider">
+                  <div className="w-1 h-1 rounded-full bg-slate-600" />
+                  Inactive
                 </span>
               )}
             </div>
@@ -89,31 +90,29 @@ const SettingsModal = ({ isOpen, onClose }) => {
               type="password"
               value={openrouterKey}
               onChange={(e) => setOpenrouterKey(e.target.value)}
-              placeholder="sk-or-..."
-              className="w-full px-3 py-2.5 rounded-lg text-xs text-slate-300 placeholder:text-slate-600 font-mono"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}
+              placeholder="sk-or-v1-..."
+              className="w-full px-4 py-3 rounded-xl text-xs text-white placeholder:text-slate-700 font-mono bg-black/40 border border-white/5 focus:border-[#A259FF]/40 transition-all"
             />
-            <p className="text-[9px] text-slate-600 mt-1.5">
-              Routes to GPT-4o and Claude 3.5 Sonnet
+            <p className="text-[9px] text-slate-600 font-secondary leading-relaxed">
+              Required for synthesis through GPT-4o and Claude systems.
             </p>
           </div>
 
           {/* Groq Key */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Groq API Key
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#46B1FF] font-primary">
+                Groq Accelerator
               </label>
               {status.groq ? (
-                <span className="flex items-center gap-1 text-[9px] text-emerald-400">
-                  <CheckCircle2 size={10} /> Connected
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-[#DEF767] uppercase tracking-wider">
+                  <div className="w-1 h-1 rounded-full bg-[#DEF767] shadow-[0_0_8px_#DEF767]" />
+                  Active
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-[9px] text-slate-600">
-                  <AlertCircle size={10} /> Not set
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-wider">
+                  <div className="w-1 h-1 rounded-full bg-slate-600" />
+                  Inactive
                 </span>
               )}
             </div>
@@ -122,37 +121,38 @@ const SettingsModal = ({ isOpen, onClose }) => {
               value={groqKey}
               onChange={(e) => setGroqKey(e.target.value)}
               placeholder="gsk_..."
-              className="w-full px-3 py-2.5 rounded-lg text-xs text-slate-300 placeholder:text-slate-600 font-mono"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}
+              className="w-full px-4 py-3 rounded-xl text-xs text-white placeholder:text-slate-700 font-mono bg-black/40 border border-white/5 focus:border-[#A259FF]/40 transition-all"
             />
-            <p className="text-[9px] text-slate-600 mt-1.5">
-              Routes to Llama 3.1 70B (high-speed inference)
+            <p className="text-[9px] text-slate-600 font-secondary leading-relaxed">
+              Provides near-instant inference via Llama 3.1 70B clusters.
             </p>
           </div>
         </div>
 
         {/* Footer */}
         <div
-          className="flex items-center justify-between px-6 py-4"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+          className="flex items-center justify-between px-7 py-5 bg-black/40"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <span className="text-[9px] text-slate-600">
-            Keys are stored locally and never sent to our servers.
-          </span>
+          <div className="flex items-center gap-2 max-w-[180px]">
+            <AlertCircle size={10} className="text-slate-600 flex-shrink-0" />
+            <span className="text-[8px] text-slate-600 leading-tight font-secondary uppercase tracking-tight">
+              Credentials remain client-side and encrypted via local browser cache.
+            </span>
+          </div>
           <button
             onClick={handleSave}
-            className="btn-run px-4 py-2 rounded-lg text-xs font-bold text-white flex items-center gap-2"
+            className="btn-run px-6 py-3 rounded-xl text-xs font-bold text-white flex items-center gap-2.5 shadow-xl shadow-[#A259FF]/20"
           >
             {saved ? (
               <>
-                <CheckCircle2 size={14} /> Saved
+                <CheckCircle2 size={15} className="text-[#DEF767]" />
+                Committed
               </>
             ) : (
               <>
-                <Save size={14} /> Save Keys
+                <Save size={15} />
+                Sync Keys
               </>
             )}
           </button>

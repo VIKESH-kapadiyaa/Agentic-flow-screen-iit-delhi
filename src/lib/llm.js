@@ -83,18 +83,25 @@ export async function callLLM(userTask, agentPersona, agentName = 'Synthesis Age
   }
 
   // ── System prompt: Agent persona + structured output instruction ──
-  const systemPrompt = `You are "${agentName}", an expert agent in the Mandelbrot Agentic Design framework.
+  const systemPrompt = `You are "${agentName}", a high-order intelligence unit in the Mandelbrot Neuro-Agentic framework.
 
 YOUR PERSONA:
 ${agentPersona}
 
 INSTRUCTIONS:
-Process the user's request through your specific expertise. Produce both a comprehensive text deliverable AND a beautiful visual HTML representation of it.
+Process the user's request through your specific neural expertise. Produce both a comprehensive text deliverable AND a beautiful visual HTML representation of it.
 
 RESPONSE FORMAT — Return a valid JSON object with exactly two keys:
 {
   "content": "Your complete, detailed text output. This is the actual deliverable — a full analysis, article, strategy document, or design specification. Be thorough, insightful, and professional. Use paragraphs and structure.",
-  "ui": "A self-contained HTML component that renders your output beautifully. Use ONLY inline styles (no external CSS classes). Design: dark backgrounds (#0a0a0f, #111118), light text (#e2e8f0, #cbd5e1), indigo accents (#818cf8, #6366f1), emerald highlights (#34d399), subtle borders (1px solid #1e293b), rounded containers (border-radius:12px), generous padding (24-32px), Inter/system-ui font. Include headings, lists, callouts, dividers. Make it look like a premium dashboard card."
+  "ui": "A self-contained HTML component that renders your output beautifully. Use ONLY inline styles (no external CSS classes). 
+           Design System:
+           - Backgrounds: Deep black (#000000) or high-gloss navy-black (#0a0a0f).
+           - Accents: Electric Purple (#A259FF) for primary highlights, Azure Blue (#46B1FF) for information, Lime Green (#DEF767) for success/growth.
+           - Borders: Subtle (1px solid rgba(255,255,255,0.08)).
+           - Typography: Header font 'Syne', body font 'Outfit' (fallback to sans-serif).
+           - Style: Glassmorphic cards (backdrop-filter: blur(16px)), generous padding (32px), rounded corners (24px).
+           - Layout: Use grids, lists, and bold display headings to create a 'Command Center' or 'Executive Dashboard' aesthetic."
 }
 
 CRITICAL: Return ONLY the raw JSON object. No markdown fences, no code blocks, no explanations outside the JSON.`;

@@ -11,78 +11,75 @@ const FlowFooter = ({ flowStatus, logs, completedCount, totalCount }) => {
   }, [logs]);
 
   const statusText = {
-    idle: 'System Standing By',
-    running: 'Workflow Executing…',
-    completed: 'Workflow Complete — System LIVE',
+    idle: 'Neural Bridge Optimized',
+    running: 'Sequence Execution Active…',
+    completed: 'Sequence Sync Complete',
   };
 
   const statusColor = {
-    idle: '#64748b',
-    running: '#818cf8',
-    completed: '#34d399',
+    idle: '#46B1FF',
+    running: '#A259FF',
+    completed: '#DEF767',
   };
 
   return (
     <footer
-      className="glass flex items-center justify-between px-5 py-2 z-30 relative"
-      style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+      className="bg-black/90 backdrop-blur-2xl flex items-center justify-between px-6 py-2.5 z-40 relative border-t border-white/[0.04]"
     >
       {/* Left: Status */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
           <div
-            className={`w-2 h-2 rounded-full ${flowStatus === 'running' ? 'status-running' : ''}`}
-            style={{ background: statusColor[flowStatus] || '#64748b' }}
+            className={`w-1.5 h-1.5 rounded-full ${flowStatus === 'running' ? 'status-running' : ''}`}
+            style={{ 
+              background: statusColor[flowStatus] || '#46B1FF',
+              boxShadow: flowStatus !== 'idle' ? `0 0 12px ${statusColor[flowStatus]}` : 'none'
+            }}
           />
           <span
-            className="text-[10px] font-semibold tracking-wide"
+            className="text-[10px] font-bold tracking-wider uppercase font-secondary"
             style={{ color: statusColor[flowStatus] }}
           >
-            {statusText[flowStatus] || 'Ready'}
+            {statusText[flowStatus] || 'Standby'}
           </span>
         </div>
-        <div className="h-3 w-px bg-slate-800" />
-        <span className="text-[9px] font-mono text-slate-600">
-          {completedCount}/{totalCount} agents
+        <div className="h-3 w-px bg-white/10" />
+        <span className="text-[9px] font-mono text-slate-500 tracking-tighter">
+          SYNC: {completedCount}/{totalCount} AGENTS ACTIVE
         </span>
       </div>
 
       {/* Center: Inline Logs */}
       <div
         ref={logRef}
-        className="flex-1 mx-6 overflow-x-auto no-scrollbar flex items-center gap-3"
+        className="flex-1 mx-8 overflow-x-auto no-scrollbar flex items-center gap-4 py-1"
       >
         {logs.slice(-4).map((log, i) => (
           <div
             key={log.id || i}
-            className="flex items-center gap-1.5 flex-shrink-0 log-enter"
+            className="flex items-center gap-2 flex-shrink-0 log-enter bg-white/[0.02] px-2 py-1 rounded-md border border-white/[0.03]"
           >
-            <Terminal size={8} className="text-slate-600" />
             <span
-              className="text-[9px] font-mono whitespace-nowrap"
+              className="text-[9px] font-mono whitespace-nowrap opacity-80"
               style={{
                 color:
                   log.type === 'success'
-                    ? '#34d399'
+                    ? '#DEF767'
                     : log.type === 'error'
-                    ? '#ef4444'
+                    ? '#FF6A6A'
                     : log.type === 'info'
-                    ? '#818cf8'
-                    : '#64748b',
+                    ? '#46B1FF'
+                    : '#CEA3FF',
               }}
             >
-              {log.text}
+              [{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}] {log.text}
             </span>
           </div>
         ))}
       </div>
 
-      {/* Right: Framework Label */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-slate-700">
-          Mandelbrot · 16 Agents
-        </span>
-      </div>
+      {/* Right: Empty spacer for layout balance */}
+      <div className="flex-shrink-0 w-[180px]" />
     </footer>
   );
 };

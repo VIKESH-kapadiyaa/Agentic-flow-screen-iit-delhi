@@ -6,70 +6,76 @@ const FlowHeader = ({ prompt, setPrompt, runFlow, flowStatus, onOpenSettings }) 
 
   return (
     <header
-      className="glass flex items-center justify-between px-5 py-3 z-30 relative"
-      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+      className="bg-black/90 backdrop-blur-2xl flex items-center justify-between px-6 py-4 z-40 relative border-b border-white/[0.04]"
     >
       {/* Left: Logo */}
-      <div className="flex items-center gap-2.5 flex-shrink-0">
+      <div className="flex items-center gap-3.5 flex-shrink-0">
         <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
+          className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
           style={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-            boxShadow: '0 2px 10px rgba(99,102,241,0.3)',
+            background: 'linear-gradient(135deg, var(--accent-purple) 0%, #8b5cf6 100%)',
+            boxShadow: '0 4px 18px rgba(162, 89, 255, 0.35)',
           }}
         >
-          <Cpu className="text-white" size={16} />
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            className="w-8 h-8 object-contain" 
+          />
         </div>
         <div>
-          <h1 className="text-sm font-bold tracking-tight text-slate-200">
-           Agentic flow
+          <h1 className="text-[17px] font-bold tracking-tight text-white font-display leading-tight">
+           Agentic Flow
           </h1>
-          <p className="text-[8px] uppercase tracking-[0.2em] text-slate-600 -mt-0.5">
-            Agentic Design
+          <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#CEA3FF] opacity-60">
+            Neuro-Agentic Systems
           </p>
         </div>
       </div>
 
       {/* Center: Prompt Input */}
-      <div className="flex-1 max-w-xl mx-6">
+      <div className="flex-1 max-w-2xl mx-10 relative">
         <input
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Enter your task… e.g. 'Write an article on design cycles'"
-          className="w-full px-4 py-2 rounded-lg text-xs text-slate-300 placeholder:text-slate-600"
+          placeholder="Enter objective for the neural sequence…"
+          className="w-full px-5 py-2.5 rounded-xl text-xs text-white placeholder:text-slate-600 transition-all font-secondary"
           style={{
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.06)',
           }}
         />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none opacity-20">
+          <kbd className="text-[9px] font-mono border border-white/20 px-1 rounded">⌘</kbd>
+          <kbd className="text-[9px] font-mono border border-white/20 px-1 rounded">K</kbd>
+        </div>
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-3 flex-shrink-0">
         <button
           onClick={onOpenSettings}
-          className="p-2.5 rounded-lg btn-glass text-slate-400 hover:text-slate-200"
-          style={{ border: '1px solid rgba(255,255,255,0.06)' }}
-          title="API Settings"
+          className="p-3 rounded-xl btn-glass text-slate-400 hover:text-white group border border-white/5"
+          title="System Settings"
         >
-          <Settings size={16} />
+          <Settings size={17} className="group-hover:rotate-45 transition-transform" />
         </button>
 
         <button
           onClick={runFlow}
           disabled={isRunning}
-          className="btn-run px-5 py-2.5 rounded-lg text-xs font-bold text-white flex items-center gap-2"
+          className="btn-run px-6 py-3 rounded-xl text-xs font-bold text-white flex items-center gap-2.5"
         >
           {isRunning ? (
             <>
-              <Loader2 size={14} className="animate-spin" />
-              Running…
+              <Loader2 size={15} className="animate-spin" />
+              Processing Sequence
             </>
           ) : (
             <>
-              <Play size={14} fill="currentColor" />
-              Run Flow
+              <Play size={15} fill="currentColor" />
+              Initialize Flow
             </>
           )}
         </button>
