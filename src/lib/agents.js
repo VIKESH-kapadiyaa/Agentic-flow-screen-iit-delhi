@@ -2,7 +2,7 @@
 // 16 agents across 4 phases: Discover → Define → Develop → Deliver
 // Each phase forms a diamond shape on the infinite canvas.
 
-export const NODE_WIDTH = 260;
+export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 140;
 
 export const AGENTS = [
@@ -15,11 +15,10 @@ export const AGENTS = [
     phase: 1,
     phaseName: 'Discover',
     icon: 'Search',
-    diamondPos: 'top',
-    x: 200, y: 80,
+    diamondPos: 'left',
+    x: 40, y: 310,
     description: 'Analyze existing feedback & ratings',
-    systemPrompt:
-      'You are a Review Analyst Agent. Analyze existing product reviews, app store ratings, and customer feedback to identify recurring themes, pain points, and desired features. Return structured insights as JSON.',
+    systemPrompt: 'Analyzes reviews...',
   },
   {
     id: 'observations',
@@ -27,11 +26,10 @@ export const AGENTS = [
     phase: 1,
     phaseName: 'Discover',
     icon: 'Eye',
-    diamondPos: 'left',
-    x: 40, y: 310,
+    diamondPos: 'top',
+    x: 300, y: 80,
     description: 'Study user behavior patterns',
-    systemPrompt:
-      'You are a Behavioral Observation Agent. Study user behavior patterns through analytics, session recordings, and heatmaps. Identify usability issues and unexpected usage patterns.',
+    systemPrompt: 'Studies behavior...',
   },
   {
     id: 'primaryResearch',
@@ -39,11 +37,10 @@ export const AGENTS = [
     phase: 1,
     phaseName: 'Discover',
     icon: 'Users',
-    diamondPos: 'right',
-    x: 360, y: 310,
+    diamondPos: 'bottom',
+    x: 300, y: 540,
     description: 'Conduct interviews & surveys',
-    systemPrompt:
-      'You are a Primary Research Agent. Design and analyze user interviews, surveys, and usability tests. Extract qualitative insights about user needs and motivations.',
+    systemPrompt: 'Conducts research...',
   },
   {
     id: 'deskResearch',
@@ -51,11 +48,10 @@ export const AGENTS = [
     phase: 1,
     phaseName: 'Discover',
     icon: 'BookOpen',
-    diamondPos: 'bottom',
-    x: 200, y: 540,
+    diamondPos: 'right',
+    x: 560, y: 310,
     description: 'Analyze market & competitor data',
-    systemPrompt:
-      'You are a Desk Research Agent. Analyze market reports, competitor products, industry trends, and academic research. Provide comprehensive landscape analysis.',
+    systemPrompt: 'Market analysis...',
   },
 
   // ═══════════════════════════════════════════════
@@ -67,11 +63,10 @@ export const AGENTS = [
     phase: 2,
     phaseName: 'Define',
     icon: 'User',
-    diamondPos: 'top',
-    x: 830, y: 80,
+    diamondPos: 'left',
+    x: 820, y: 310,
     description: 'Build detailed user archetypes',
-    systemPrompt:
-      'You are a Persona Creation Agent. Synthesize research data into detailed user personas with demographics, goals, behaviors, and pain points.',
+    systemPrompt: 'Creates personas...',
   },
   {
     id: 'userJourney',
@@ -79,11 +74,10 @@ export const AGENTS = [
     phase: 2,
     phaseName: 'Define',
     icon: 'Compass',
-    diamondPos: 'left',
-    x: 670, y: 310,
+    diamondPos: 'top',
+    x: 1080, y: 80,
     description: 'Map touchpoints & emotions',
-    systemPrompt:
-      'You are a Journey Mapping Agent. Create comprehensive user journey maps showing touchpoints, emotions, pain points, and opportunities.',
+    systemPrompt: 'Maps journeys...',
   },
   {
     id: 'problemStatement',
@@ -91,11 +85,10 @@ export const AGENTS = [
     phase: 2,
     phaseName: 'Define',
     icon: 'Target',
-    diamondPos: 'right',
-    x: 990, y: 310,
+    diamondPos: 'bottom',
+    x: 1080, y: 540,
     description: 'Define core HMW challenges',
-    systemPrompt:
-      'You are a Problem Definition Agent. Synthesize all research into clear, actionable problem statements using the "How Might We" framework.',
+    systemPrompt: 'Defines problems...',
   },
   {
     id: 'insights',
@@ -103,11 +96,10 @@ export const AGENTS = [
     phase: 2,
     phaseName: 'Define',
     icon: 'Lightbulb',
-    diamondPos: 'bottom',
-    x: 830, y: 540,
+    diamondPos: 'right',
+    x: 1340, y: 310,
     description: 'Distill actionable patterns',
-    systemPrompt:
-      'You are an Insight Synthesis Agent. Distill all research and analysis into key actionable insights driving design direction.',
+    systemPrompt: 'Distills insights...',
   },
 
   // ═══════════════════════════════════════════════
@@ -119,11 +111,10 @@ export const AGENTS = [
     phase: 3,
     phaseName: 'Develop',
     icon: 'Sparkles',
-    diamondPos: 'top',
-    x: 1460, y: 80,
+    diamondPos: 'left',
+    x: 1600, y: 310,
     description: 'Generate creative solutions',
-    systemPrompt:
-      'You are an Ideation Agent. Generate diverse creative solutions using brainstorming, SCAMPER, and lateral thinking techniques.',
+    systemPrompt: 'Generates ideas...',
   },
   {
     id: 'architecture',
@@ -131,11 +122,10 @@ export const AGENTS = [
     phase: 3,
     phaseName: 'Develop',
     icon: 'Layers',
-    diamondPos: 'left',
-    x: 1300, y: 310,
+    diamondPos: 'top',
+    x: 1860, y: 80,
     description: 'Design info hierarchy & nav',
-    systemPrompt:
-      'You are an Information Architecture Agent. Design structural organization of content, navigation systems, and information hierarchy.',
+    systemPrompt: 'Designs IA...',
   },
   {
     id: 'prototyping',
@@ -143,11 +133,10 @@ export const AGENTS = [
     phase: 3,
     phaseName: 'Develop',
     icon: 'Box',
-    diamondPos: 'right',
-    x: 1620, y: 310,
+    diamondPos: 'bottom',
+    x: 1860, y: 540,
     description: 'Build rapid interactive demos',
-    systemPrompt:
-      'You are a Rapid Prototyping Agent. Create interactive prototypes demonstrating key interactions, user flows, and feature concepts.',
+    systemPrompt: 'Creates prototypes...',
   },
   {
     id: 'visualDesign',
@@ -155,11 +144,10 @@ export const AGENTS = [
     phase: 3,
     phaseName: 'Develop',
     icon: 'Palette',
-    diamondPos: 'bottom',
-    x: 1460, y: 540,
+    diamondPos: 'right',
+    x: 2120, y: 310,
     description: 'Create the visual system',
-    systemPrompt:
-      'You are a Visual Design Agent. Create the visual design system including typography, color palettes, spacing, and component styles.',
+    systemPrompt: 'Creates visual design...',
   },
 
   // ═══════════════════════════════════════════════
@@ -171,11 +159,10 @@ export const AGENTS = [
     phase: 4,
     phaseName: 'Deliver',
     icon: 'ShieldCheck',
-    diamondPos: 'top',
-    x: 2090, y: 80,
+    diamondPos: 'left',
+    x: 2380, y: 310,
     description: 'Validate with real users',
-    systemPrompt:
-      'You are a Usability Testing Agent. Design and execute usability tests, A/B tests, and accessibility audits.',
+    systemPrompt: 'Performs testing...',
   },
   {
     id: 'iteration',
@@ -183,11 +170,10 @@ export const AGENTS = [
     phase: 4,
     phaseName: 'Deliver',
     icon: 'RefreshCw',
-    diamondPos: 'left',
-    x: 1930, y: 310,
+    diamondPos: 'top',
+    x: 2640, y: 80,
     description: 'Refine based on feedback',
-    systemPrompt:
-      'You are a Design Iteration Agent. Refine designs based on test results, prioritize changes by impact.',
+    systemPrompt: 'Iterates design...',
   },
   {
     id: 'documentation',
@@ -195,11 +181,10 @@ export const AGENTS = [
     phase: 4,
     phaseName: 'Deliver',
     icon: 'FileText',
-    diamondPos: 'right',
-    x: 2250, y: 310,
+    diamondPos: 'bottom',
+    x: 2640, y: 540,
     description: 'Create specs & handoff docs',
-    systemPrompt:
-      'You are a Documentation Agent. Create comprehensive design specifications and handoff materials for engineering teams.',
+    systemPrompt: 'Creates documentation...',
   },
   {
     id: 'deployment',
@@ -207,11 +192,10 @@ export const AGENTS = [
     phase: 4,
     phaseName: 'Deliver',
     icon: 'Rocket',
-    diamondPos: 'bottom',
-    x: 2090, y: 540,
+    diamondPos: 'right',
+    x: 2900, y: 310,
     description: 'Ship to production edge',
-    systemPrompt:
-      'You are a Deployment Agent. Manage the production rollout process including staging, QA validation, performance optimization, and go-live coordination.',
+    systemPrompt: 'Deploys product...',
   },
 ];
 
@@ -220,37 +204,37 @@ export const AGENTS = [
 // Between diamonds: bottom.right → next-top.left
 export const WIRE_CONNECTIONS = [
   // Diamond 1: Discover
-  { from: 'reviews', to: 'observations', fromPort: 'bottom', toPort: 'top' },
+  { from: 'reviews', to: 'observations', fromPort: 'top', toPort: 'bottom' },
   { from: 'reviews', to: 'primaryResearch', fromPort: 'bottom', toPort: 'top' },
   { from: 'observations', to: 'deskResearch', fromPort: 'bottom', toPort: 'top' },
-  { from: 'primaryResearch', to: 'deskResearch', fromPort: 'bottom', toPort: 'top' },
+  { from: 'primaryResearch', to: 'deskResearch', fromPort: 'top', toPort: 'bottom' },
 
-  // Bridge: Discover → Define
+  // Bridge: Phase 1 → 2
   { from: 'deskResearch', to: 'personas', fromPort: 'right', toPort: 'left' },
 
   // Diamond 2: Define
-  { from: 'personas', to: 'userJourney', fromPort: 'bottom', toPort: 'top' },
+  { from: 'personas', to: 'userJourney', fromPort: 'top', toPort: 'bottom' },
   { from: 'personas', to: 'problemStatement', fromPort: 'bottom', toPort: 'top' },
   { from: 'userJourney', to: 'insights', fromPort: 'bottom', toPort: 'top' },
-  { from: 'problemStatement', to: 'insights', fromPort: 'bottom', toPort: 'top' },
+  { from: 'problemStatement', to: 'insights', fromPort: 'top', toPort: 'bottom' },
 
-  // Bridge: Define → Develop
+  // Bridge: Phase 2 → 3
   { from: 'insights', to: 'ideation', fromPort: 'right', toPort: 'left' },
 
   // Diamond 3: Develop
-  { from: 'ideation', to: 'architecture', fromPort: 'bottom', toPort: 'top' },
+  { from: 'ideation', to: 'architecture', fromPort: 'top', toPort: 'bottom' },
   { from: 'ideation', to: 'prototyping', fromPort: 'bottom', toPort: 'top' },
   { from: 'architecture', to: 'visualDesign', fromPort: 'bottom', toPort: 'top' },
-  { from: 'prototyping', to: 'visualDesign', fromPort: 'bottom', toPort: 'top' },
+  { from: 'prototyping', to: 'visualDesign', fromPort: 'top', toPort: 'bottom' },
 
-  // Bridge: Develop → Deliver
+  // Bridge: Phase 3 → 4
   { from: 'visualDesign', to: 'testing', fromPort: 'right', toPort: 'left' },
 
   // Diamond 4: Deliver
-  { from: 'testing', to: 'iteration', fromPort: 'bottom', toPort: 'top' },
+  { from: 'testing', to: 'iteration', fromPort: 'top', toPort: 'bottom' },
   { from: 'testing', to: 'documentation', fromPort: 'bottom', toPort: 'top' },
   { from: 'iteration', to: 'deployment', fromPort: 'bottom', toPort: 'top' },
-  { from: 'documentation', to: 'deployment', fromPort: 'bottom', toPort: 'top' },
+  { from: 'documentation', to: 'deployment', fromPort: 'top', toPort: 'bottom' },
 ];
 
 // ── Execution Order ─────────────────────────────────────────────────
@@ -277,10 +261,10 @@ export const EXECUTION_ORDER = [
 
 // ── Phase Labels ────────────────────────────────────────────────────
 export const PHASE_LABELS = [
-  { name: 'DISCOVER', x: 330, y: 30, phase: 1, subtitle: 'Diverge' },
-  { name: 'DEFINE', x: 960, y: 30, phase: 2, subtitle: 'Converge' },
-  { name: 'DEVELOP', x: 1590, y: 30, phase: 3, subtitle: 'Diverge' },
-  { name: 'DELIVER', x: 2220, y: 30, phase: 4, subtitle: 'Converge' },
+  { name: 'DISCOVER', x: 300, y: 310, phase: 1, subtitle: 'Diverge' },
+  { name: 'DEFINE', x: 1080, y: 310, phase: 2, subtitle: 'Converge' },
+  { name: 'DEVELOP', x: 1860, y: 310, phase: 3, subtitle: 'Diverge' },
+  { name: 'DELIVER', x: 2640, y: 310, phase: 4, subtitle: 'Converge' },
 ];
 
 // ── Geometry Helpers ────────────────────────────────────────────────
