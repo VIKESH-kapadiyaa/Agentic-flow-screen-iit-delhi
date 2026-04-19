@@ -29,7 +29,8 @@ const DIAMOND_COORDS = {
   "deliver::ux-test": { x: 2000, y: 0, colIndex: 8 }, // Final Convergence point
 };
 
-export const computeLayout = (mode = 'desktop', containerWidth, containerHeight) => {
+// eslint-disable-next-line no-unused-vars
+export const computeLayout = (_mode = 'desktop', _containerWidth, containerHeight) => {
   const nodeRegistry = {};
   
   const h = containerHeight || 800;

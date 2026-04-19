@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, Plus, Star, LayoutGrid, Clock, Folder, Activity, Trash2 } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
 // --- MOCK DATA ---
@@ -52,21 +53,18 @@ const INITIAL_MOCK_SEQUENCES = [
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sequences, setSequences] = useState([]);
-
-  useEffect(() => {
+  const [sequences, setSequences] = useState(() => {
     const saved = localStorage.getItem('agentic_sequences');
     if (saved) {
       try {
-        setSequences(JSON.parse(saved));
-      } catch (e) {
-        setSequences(INITIAL_MOCK_SEQUENCES);
+        return JSON.parse(saved);
+      } catch {
+        return INITIAL_MOCK_SEQUENCES;
       }
-    } else {
-      localStorage.setItem('agentic_sequences', JSON.stringify(INITIAL_MOCK_SEQUENCES));
-      setSequences(INITIAL_MOCK_SEQUENCES);
     }
-  }, []);
+    localStorage.setItem('agentic_sequences', JSON.stringify(INITIAL_MOCK_SEQUENCES));
+    return INITIAL_MOCK_SEQUENCES;
+  });
 
   const handleNewFlow = () => {
     const newSeq = {

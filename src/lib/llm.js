@@ -48,9 +48,15 @@ export function getSavedKeys() {
  * @param {string} neuralContext - Previous phase data (Neural Bridge)
  * @returns {Promise<{content: string, ui: string}>}
  */
-export async function callLLM(userTask, agent, neuralContext = '') {
+export async function callLLM(userTask, agent, neuralContext = '', attachment = null) {
   const openrouterKey = getKey('openrouter_api_key', 'VITE_OPENROUTER_API_KEY_1');
   const groqKey = getKey('groq_api_key', 'VITE_GROQ_API_KEY_1');
+  
+  // Build enriched task with attachment
+  let enrichedTask = userTask;
+  if (attachment?.content) {
+    enrichedTask += `\n\n--- ATTACHED FILE: ${attachment.name} ---\n${attachment.content.substring(0, 8000)}\n--- END ATTACHMENT ---`;
+  }
   
   // Choose key based on availability. Prioritize what's inputted.
   const activeKey = openrouterKey || groqKey;
@@ -78,7 +84,7 @@ export async function callLLM(userTask, agent, neuralContext = '') {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        userTask,
+        userTask: enrichedTask,
         agent,
         neuralContext,
         activeKey // Pass the key safely to the backend (or replace with sessions)

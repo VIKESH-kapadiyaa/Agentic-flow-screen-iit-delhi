@@ -1,20 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Key, CheckCircle2, AlertCircle, Save } from 'lucide-react';
 import { saveKeys, getSavedKeys, getKeyStatus } from '../lib/llm';
 
 const SettingsModal = ({ isOpen, onClose }) => {
-  const [openrouterKey, setOpenrouterKey] = useState('');
-  const [groqKey, setGroqKey] = useState('');
+  const initialKeys = isOpen ? getSavedKeys() : { openrouterKey: '', groqKey: '' };
+  const [openrouterKey, setOpenrouterKey] = useState(initialKeys.openrouterKey);
+  const [groqKey, setGroqKey] = useState(initialKeys.groqKey);
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const keys = getSavedKeys();
-      setOpenrouterKey(keys.openrouterKey);
-      setGroqKey(keys.groqKey);
-      setSaved(false);
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 

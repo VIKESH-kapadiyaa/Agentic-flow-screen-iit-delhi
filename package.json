@@ -6,7 +6,7 @@
   "scripts": {
     "dev:frontend": "vite",
     "dev:server": "node server.js",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:server\"",
+    "dev": "concurrently --kill-others --prefix \"[{name}]\" --names \"VITE,SRVR\" --prefix-colors \"cyan,magenta\" \"npm run dev:frontend\" \"npm run dev:server\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -19,6 +19,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "framer-motion": "^12.38.0",
+    "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

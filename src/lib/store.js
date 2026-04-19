@@ -18,6 +18,8 @@ export const useWorkflowStore = create((set, get) => ({
   // Master Project Input
   projectPrompt: '',
   setProjectPrompt: (prompt) => set({ projectPrompt: prompt }),
+  projectAttachment: null, // { name, content, type }
+  setProjectAttachment: (attachment) => set({ projectAttachment: attachment }),
 
   // Execution State
   currentPhaseIndex: 0,
@@ -60,7 +62,8 @@ export const useWorkflowStore = create((set, get) => ({
   },
 
   // State Updates with built-in Priority Resolution Logic
-  selectNode: (nodeId, source = 'manualSelection') => {
+  // eslint-disable-next-line no-unused-vars
+  selectNode: (nodeId, _source = 'manualSelection') => {
     // Determine priority resolution if needed here
     // Manual selection overrides Advisor automated selections
     set({ selectedNodeId: nodeId, selectedToolId: null });

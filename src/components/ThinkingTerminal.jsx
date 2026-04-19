@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSavedKeys } from '../lib/llm';
 import { useWorkflowStore } from '../lib/store';
@@ -7,22 +8,35 @@ const ThinkingTerminal = ({ node, isRunning }) => {
   const [text, setText] = useState('');
   const [active, setActive] = useState(false);
   const projectPrompt = useWorkflowStore(state => state.projectPrompt);
+  const textRef = useRef('');
+
+  // Sync ref in a separate effect to avoid "cannot update ref during render"
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
 
   useEffect(() => {
     if (!isRunning) {
-        if (text) {
+        if (textRef.current) {
            // delay hiding slightly
-           setTimeout(() => {
+           const timer = setTimeout(() => {
                setActive(false);
                setText('');
            }, 2000);
+           return () => clearTimeout(timer);
         }
         return;
     }
     
-    setText('> Initializing neural bridge...\n');
-    setActive(true);
     let isMounted = true;
+
+    // Use setTimeout to avoid synchronous setState in effect body
+    const initTimer = setTimeout(() => {
+      if (isMounted) {
+        setText('> Initializing neural bridge...\n');
+        setActive(true);
+      }
+    }, 0);
 
     const startStream = async () => {
       const keys = getSavedKeys();
@@ -64,7 +78,7 @@ const ThinkingTerminal = ({ node, isRunning }) => {
                 const parsed = JSON.parse(dataStr);
                 const token = parsed.choices?.[0]?.delta?.content || '';
                 setText(prev => prev + token);
-              } catch (e) {
+              } catch {
                  // incomplete chunk wait for next
               }
             }
@@ -72,15 +86,15 @@ const ThinkingTerminal = ({ node, isRunning }) => {
         }
         
         if (isMounted) setText(prev => prev + '\n\n> [Sequence Terminated]');
-      } catch (err) {
+      } catch {
          if (isMounted) setText(prev => prev + '\n> Error establishing neural link...');
       }
     };
 
     // Add a slight artificial delay so it doesn't fly by instantly.
-    setTimeout(startStream, 500);
+    const streamTimer = setTimeout(startStream, 500);
 
-    return () => { isMounted = false; };
+    return () => { isMounted = false; clearTimeout(initTimer); clearTimeout(streamTimer); };
   }, [isRunning, node, projectPrompt]);
 
   return (
