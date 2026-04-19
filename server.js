@@ -52,18 +52,26 @@ app.post('/api/llm', async (req, res) => {
   const { url, defaultModel } = determineProvider(activeKey);
   console.log(`[Server] Routing to provider: ${url} with model: ${defaultModel}`);
 
-  // ── NODE EXECUTION & DELIVERY (PRODUCT SPECS) ─────────────────
-  let productSpec = "Provide detailed analysis and structured output.";
+  // ── NODE EXECUTION & DELIVERY (DOUBLE DIAMOND PROTOCOL) ─────────
+  let productSpec = "Provide deep expert analysis and structured technical output. Avoid placeholders.";
   const phaseTitle = (agent.phaseLabel || agent.categoryName || '').toUpperCase();
   
   if (phaseTitle.includes('DISCOVER') || phaseTitle.includes('RESEARCH')) {
-    productSpec = `* Phase: DISCOVER / RESEARCH\n* Deliverable: Comprehensive JSON market analysis & Competitor Matrix. Write actual JSON blocks in your content, and create a sophisticated matrix UI.`;
+    productSpec = `* Phase: [DISCOVER] - Research & Exploration
+* Deliverable: Deep-dive market sentiment analysis, competitor feature mapping, and user persona profiling. 
+* Context: Search for real-world trends. Create a sophisticated comparison matrix in the UI.`;
   } else if (phaseTitle.includes('DEFINE') || phaseTitle.includes('ARCHITECTURE')) {
-    productSpec = `* Phase: DEFINE / ARCHITECTURE\n* Deliverable: Mermaid.js diagrams and technical System Design Docs. Include Mermaid syntax in your content and UI.`;
+    productSpec = `* Phase: [DEFINE] - Synthesis & Technical Strategy
+* Deliverable: Comprehensive system architecture, data flow diagrams (Mermaid.js), and technical specifications. 
+* Context: Define actual technical stacks and integration logic. Include Mermaid syntax.`;
   } else if (phaseTitle.includes('DEVELOP') || phaseTitle.includes('BUILD')) {
-    productSpec = `* Phase: DEVELOP / ASSET CREATION\n* Deliverable: Production-ready Tailwind CSS code, Framer Motion snippets, or DALL-E/Flux image prompts. Deliver highly actionable code outputs.`;
+    productSpec = `* Phase: [DEVELOP] - Ideation & Prototype Creation
+* Deliverable: Production-ready Tailwind CSS code, React component structures, or complex logic handlers. 
+* Context: Write actual functional code blocks. Deliver extreme technical depth.`;
   } else if (phaseTitle.includes('DELIVER') || phaseTitle.includes('DEPLOY')) {
-    productSpec = `* Phase: DELIVER / FINALIZATION\n* Deliverable: A summarized Project Manifest (PDF/Markdown ready) and a Deployment Readiness Report.`;
+    productSpec = `* Phase: [DELIVER] - Finalization & Deployment Plan
+* Deliverable: Deployment manifest, CI/CD pipeline strategy, and final Project Summary for stakeholders. 
+* Context: Provide actual cloud deployment steps (AWS/Vercel/GCP) based on the architecture.`;
   }
 
   const systemPrompt = `You are a specialized worker in the "Agentic Flow" Engine.

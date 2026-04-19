@@ -283,22 +283,8 @@ h1, h2, h3, .font-display {
   height: 100%;
 }
 
-
-.canvas-grid::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* Tracking Glow - High Intensity */
-  background: radial-gradient(
-    600px circle at var(--mouse-x, -50% ) var(--mouse-y, -50%),
-    rgba(162, 89, 255, 0.25) 0%,
-    rgba(162, 89, 255, 0.08) 40%,
-    transparent 80%
-  );
-  mix-blend-mode: plus-lighter;
-  z-index: 1;
-}
+/* Tracking Glow Removed for cleaner professional look */
+/* .canvas-grid::after { ... } */
 
 /* ── Button Interactions ─────────────────────────────────────────── */
 .btn-glass {

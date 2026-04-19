@@ -24,7 +24,10 @@ export const useBuilderStore = create((set, _get) => ({
       apiKey: '',
       waitConfig: { type: 'none', delay: 0 },
       triggerConfig: { type: 'manual' },
-      position: position || { x: 500, y: 500 },
+      position: position || { 
+        x: 400 + (Math.random() * 200), 
+        y: 400 + (Math.random() * 200) 
+      },
     };
     set((state) => ({
       blocks: [...state.blocks, newBlock],
@@ -65,7 +68,10 @@ export const useBuilderStore = create((set, _get) => ({
       id: generateId(),
       text: '',
       color: '#A259FF',
-      position: position || { x: 500, y: 500 }
+      position: position || { 
+        x: 400 + (Math.random() * 200), 
+        y: 400 + (Math.random() * 200) 
+      }
     };
     set((state) => ({
       stickyNotes: [...state.stickyNotes, newNote],
