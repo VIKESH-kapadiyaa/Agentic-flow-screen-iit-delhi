@@ -21,6 +21,10 @@ coverage/
 credentials.json
 secrets.json
 
+# Encrypted key store (contains API keys)
+memory/keys.enc.json
+memory/*.enc.*
+
 # Logs
 logs
 *.log
