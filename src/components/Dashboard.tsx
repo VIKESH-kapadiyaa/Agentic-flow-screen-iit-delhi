@@ -3,12 +3,13 @@ import { Search, Plus, Star, LayoutGrid, Clock, Folder, Activity, Trash2, User }
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../lib/auth';
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sequences, setSequences] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
 
   const fetchSequences = async () => {
     setLoading(true);
@@ -22,16 +23,8 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        window.location.href = '/';
-        return;
-      }
-      setUser(session.user);
-      fetchSequences();
-    };
-    init();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSequences();
   }, []);
 
   const handleNewFlow = async () => {

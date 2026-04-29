@@ -56,3 +56,6 @@ Icon
 # Testing
 /coverage
 /.nyc_output
+
+# Local Developer Guides
+AUTH_MIGRATION_GUIDE.txt

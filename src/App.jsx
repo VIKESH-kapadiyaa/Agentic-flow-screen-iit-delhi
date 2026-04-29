@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { ProtectedRoute } from './lib/auth';
 
 // Route-level code splitting — each page loads on demand
 const LandingPage = lazy(() => import('./components/landing/index.jsx'));
@@ -21,13 +22,13 @@ export default function App() {
     <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-indigo-500/30 selection:text-white">
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Default route loads the beautiful Landing Page */}
+          {/* Public route — Landing Page */}
           <Route path="/" element={<LandingPage />} />
           
-          {/* Your two clean pages */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/canvas" element={<Engine />} />
-          <Route path="/profile" element={<ProfileView />} />
+          {/* Protected routes — require authentication */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/canvas" element={<ProtectedRoute><Engine /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     </div>
