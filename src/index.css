@@ -242,6 +242,7 @@ h1, h2, h3, .font-display {
 .phase-overlay-backdrop {
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
 }
 
@@ -383,3 +384,56 @@ textarea:focus {
   stroke: #46B1FF;
   opacity: 0.15;
 }
+
+/* ── Color Picker ────────────────────────────────────────────────── */
+.color-picker-btn {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: transparent;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+}
+
+.color-picker-btn:hover {
+  transform: scale(1.25);
+}
+
+.color-picker-btn.is-active {
+  border-color: #fff;
+}
+
+/* ── Infinite Canvas ────────────────────────────────────────────── */
+.canvas-grid {
+  cursor: grab;
+}
+
+.canvas-grid.is-panning {
+  cursor: grabbing;
+}
+
+.canvas-content {
+  transform: translate(var(--canvas-x), var(--canvas-y)) scale(var(--canvas-zoom));
+  width: 3000px;
+  height: 2000px;
+  will-change: transform;
+}
+
+/* Specific Color Classes */
+.color-A259FF { background-color: #A259FF; }
+.color-A259FF.is-active { box-shadow: 0 0 12px #A259FF; }
+
+.color-46B1FF { background-color: #46B1FF; }
+.color-46B1FF.is-active { box-shadow: 0 0 12px #46B1FF; }
+
+.color-DEF767 { background-color: #DEF767; }
+.color-DEF767.is-active { box-shadow: 0 0 12px #DEF767; }
+
+.color-FF6A6A { background-color: #FF6A6A; }
+.color-FF6A6A.is-active { box-shadow: 0 0 12px #FF6A6A; }
+
+.color-FACC15 { background-color: #FACC15; }
+.color-FACC15.is-active { box-shadow: 0 0 12px #FACC15; }
+

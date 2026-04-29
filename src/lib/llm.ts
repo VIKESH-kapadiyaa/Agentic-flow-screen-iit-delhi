@@ -52,7 +52,7 @@ export async function callLLM(userTask: any, agent: any, neuralContext: any = ''
   if (!userId) {
     return {
       content: 'Not authenticated. Please sign in to use the engine.',
-      ui: `<div style="padding:32px;font-family:Outfit,sans-serif;background:rgba(10,10,15,0.8);backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(255,255,255,0.08);color:#fff;">
+      ui: `<div style="padding:32px;font-family:Outfit,sans-serif;background:rgba(10,10,15,0.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(255,255,255,0.08);color:#fff;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
           <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#A259FF,#46B1FF);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px;box-shadow:0 8px 32px rgba(162,89,255,0.3)">⚡</div>
           <h2 style="font-size:24px;font-weight:800;margin:0;letter-spacing:-0.5px">Authentication Required</h2>
@@ -95,7 +95,7 @@ export async function callLLM(userTask: any, agent: any, neuralContext: any = ''
     console.error('[Frontend] Failed to communicate with backend:', err);
     return {
       content: `Error reaching backend: ${err.message}`,
-      ui: `<div style="padding:32px;font-family:Outfit,sans-serif;background:rgba(10,10,15,0.9);backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(239,68,68,0.25)">
+      ui: `<div style="padding:32px;font-family:Outfit,sans-serif;background:rgba(10,10,15,0.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(239,68,68,0.25)">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
             <h3 style="color:#ef4444;font-size:20px;font-weight:700;margin:0;font-family:Syne,sans-serif">Frontend/Backend Conductor Error</h3>
           </div>

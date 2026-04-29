@@ -3,10 +3,10 @@ import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './lib/auth';
 
 // Route-level code splitting — each page loads on demand
-const LandingPage = lazy(() => import('./components/landing/index.jsx'));
-const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
-const Engine = lazy(() => import('./Engine.jsx'));
-const ProfileView = lazy(() => import('./components/landing/ProfileView.jsx').then(m => ({ default: m.ProfileView })));
+const LandingPage = lazy(() => import('./components/landing/index'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Engine = lazy(() => import('./Engine'));
+const ProfileView = lazy(() => import('./components/landing/ProfileView').then((m: any) => ({ default: m.ProfileView })));
 
 const PageLoader = () => (
   <div className="h-screen w-screen flex items-center justify-center bg-[#050505]">

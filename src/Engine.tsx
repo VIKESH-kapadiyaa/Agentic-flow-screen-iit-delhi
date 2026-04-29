@@ -28,44 +28,44 @@ import TemplatesView from './components/TemplatesView';
 import { useBuilderStore } from './lib/builderStore';
 
 const Engine = () => {
-  const [initError, setInitError] = useState(null);
+  const [initError, setInitError] = useState<string | null>(null);
   
   // Zustand State
-  const graphStatus = useWorkflowStore(state => state.graphStatus);
-  const setGraphStatus = useWorkflowStore(state => state.setGraphStatus);
+  const graphStatus = useWorkflowStore((state: any) => state.graphStatus);
+  const setGraphStatus = useWorkflowStore((state: any) => state.setGraphStatus);
   const selectedNodeId = useWorkflowStore(selectActiveNodeId);
-  const selectNode = useWorkflowStore(state => state.selectNode);
-  const nodeStates = useWorkflowStore(state => state.nodeStates);
+  const selectNode = useWorkflowStore((state: any) => state.selectNode);
+  const nodeStates = useWorkflowStore((state: any) => state.nodeStates);
   
-  const viewMode = useBuilderStore(state => state.viewMode);
-  const nodeResults = useWorkflowStore(state => state.nodeResults);
-  const projectPrompt = useWorkflowStore(state => state.projectPrompt);
-  const setProjectPrompt = useWorkflowStore(state => state.setProjectPrompt);
-  const currentPhaseIndex = useWorkflowStore(state => state.currentPhaseIndex);
-  const projectAttachment = useWorkflowStore(state => state.projectAttachment);
-  const setProjectAttachment = useWorkflowStore(state => state.setProjectAttachment);
-  const fileInputRef = useRef(null);
+  const viewMode = useBuilderStore((state: any) => state.viewMode);
+  const nodeResults = useWorkflowStore((state: any) => state.nodeResults);
+  const projectPrompt = useWorkflowStore((state: any) => state.projectPrompt);
+  const setProjectPrompt = useWorkflowStore((state: any) => state.setProjectPrompt);
+  const currentPhaseIndex = useWorkflowStore((state: any) => state.currentPhaseIndex);
+  const projectAttachment = useWorkflowStore((state: any) => state.projectAttachment);
+  const setProjectAttachment = useWorkflowStore((state: any) => state.setProjectAttachment);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [phaseOverlay, setPhaseOverlay] = useState(null);
+  const [phaseOverlay, setPhaseOverlay] = useState<any>(null);
   const [showOutputScreen, setShowOutputScreen] = useState(false);
 
 
   // Canvas Viewport logic
   const [camera, setCamera] = useState({ x: 100, y: 60, zoom: 0.55 });
   const [isPanning, setIsPanning] = useState(false);
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
   // Toolkit State
   const [activeTool, setActiveTool] = useState('cursor');
-  const [stickyNotes, setStickyNotes] = useState([]);
-  const [strokes, setStrokes] = useState([]);
-  const [currentStroke, setCurrentStroke] = useState(null);
+  const [stickyNotes, setStickyNotes] = useState<any[]>([]);
+  const [strokes, setStrokes] = useState<any[]>([]);
+  const [currentStroke, setCurrentStroke] = useState<any>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [canvasLocked, setCanvasLocked] = useState(false);
-  const [textLabels, setTextLabels] = useState([]);
-  const [draggingAppElement, setDraggingAppElement] = useState(null);
-  const [resizingAppElement, setResizingAppElement] = useState(null);
+  const [textLabels, setTextLabels] = useState<any[]>([]);
+  const [draggingAppElement, setDraggingAppElement] = useState<any>(null);
+  const [resizingAppElement, setResizingAppElement] = useState<any>(null);
 
   // Boot validation
   useEffect(() => {
@@ -108,7 +108,7 @@ const Engine = () => {
         }
         validateGraph();
         setGraphStatus('ready');
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
         setInitError(e.message);
         setGraphStatus('error');
@@ -142,7 +142,7 @@ const Engine = () => {
         };
         
         await supabase.from('sequences').update({ canvas_state }).eq('id', seqId);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Auto-save failed", err);
       }
     }, 2000); // 2-second debounce
@@ -151,58 +151,58 @@ const Engine = () => {
   }, [nodeResults, nodeStates, graphStatus, currentPhaseIndex, projectPrompt]);
 
 
-  const deployedTemplateId = useBuilderStore(state => state.deployedTemplateId);
-  const templates = useBuilderStore(state => state.templates);
+  const deployedTemplateId = useBuilderStore((state: any) => state.deployedTemplateId);
+  const templates = useBuilderStore((state: any) => state.templates);
 
   // Compute Layout 
   const layout = useMemo(() => {
     if (graphStatus === 'error') return null;
     if (deployedTemplateId && viewMode === 'pipeline') {
-       const activeTemplate = templates.find(t => t.id === deployedTemplateId);
+       const activeTemplate = templates.find((t: any) => t.id === deployedTemplateId);
        if (activeTemplate) {
-           const depths = {};
-           const adj = {};
-           const inDegree = {};
+           const depths: Record<string, number> = {};
+           const adj: Record<string, any[]> = {};
+           const inDegree: Record<string, number> = {};
            
-           activeTemplate.blocks.forEach(b => {
+           activeTemplate.blocks.forEach((b: any) => {
              adj[b.id] = [];
              inDegree[b.id] = 0;
              depths[b.id] = 0;
            });
            
-           activeTemplate.connections.forEach(c => {
+           activeTemplate.connections.forEach((c: any) => {
              if(adj[c.sourceBlockId] && inDegree[c.targetBlockId] !== undefined) {
-               adj[c.sourceBlockId].push(c.targetBlockId);
-               inDegree[c.targetBlockId]++;
+               adj[c.sourceBlockId]!.push(c.targetBlockId);
+               inDegree[c.targetBlockId]!++;
              }
            });
            
-           let queue = [];
+           let queue: any[] = [];
            Object.keys(inDegree).forEach(id => {
              if (inDegree[id] === 0) queue.push(id);
            });
            
            while(queue.length > 0) {
              const curr = queue.shift();
-             adj[curr].forEach(neighbor => {
-                depths[neighbor] = Math.max(depths[neighbor], depths[curr] + 1);
-                inDegree[neighbor]--;
+             adj[curr]!.forEach(neighbor => {
+                depths[neighbor] = Math.max(depths[neighbor]!, depths[curr]! + 1);
+                inDegree[neighbor]!--;
                 if(inDegree[neighbor] === 0) queue.push(neighbor);
              });
            }
            
            const phaseIds = WORKFLOW_PHASES.map(p => p.id);
-           const depthGroups = {};
+           const depthGroups: Record<number, any[]> = {};
            
-           activeTemplate.blocks.forEach(block => {
+           activeTemplate.blocks.forEach((block: any) => {
               const d = depths[block.id] || 0;
               const phaseIndex = Math.min(d, phaseIds.length - 1);
               block.dynamicPhase = phaseIds[phaseIndex];
               if(!depthGroups[d]) depthGroups[d] = [];
-              depthGroups[d].push(block);
+              depthGroups[d]!.push(block);
            });
            
-           const newLayout = {};
+           const newLayout: Record<string, any> = {};
            const maxDepth = Math.max(0, ...Object.keys(depthGroups).map(Number));
            
            for (let d = 0; d <= maxDepth; d++) {
@@ -210,7 +210,7 @@ const Engine = () => {
              const x = 350 + (d * 500);
              const startY = 400 - ((blocksInCol.length - 1) * 200) / 2;
              
-             blocksInCol.forEach((block, bIdx) => {
+             blocksInCol.forEach((block: any, bIdx: any) => {
                  const phaseIndex = Math.min(d, phaseIds.length - 1);
                  newLayout[block.id] = {
                      id: block.id,
@@ -238,9 +238,9 @@ const Engine = () => {
 
   const customEdges = useMemo(() => {
     if (!deployedTemplateId || viewMode !== 'pipeline') return [];
-    const activeTemplate = templates.find(t => t.id === deployedTemplateId);
+    const activeTemplate = templates.find((t: any) => t.id === deployedTemplateId);
     if (!activeTemplate || !layout) return [];
-    return activeTemplate.connections.map(c => {
+    return activeTemplate.connections.map((c: any) => {
         const s = layout[c.sourceBlockId];
         const t = layout[c.targetBlockId];
         if (!s || !t) return null;
@@ -262,7 +262,7 @@ const Engine = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const onWheel = (e) => {
+    const onWheel = (e: any) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         setCamera((prev) => {
@@ -280,7 +280,7 @@ const Engine = () => {
           };
         });
       } else {
-        setCamera((prev) => ({
+        setCamera((prev: any) => ({
           ...prev,
           x: prev.x - e.deltaX,
           y: prev.y - e.deltaY,
@@ -292,14 +292,14 @@ const Engine = () => {
     return () => canvas.removeEventListener('wheel', onWheel);
   }, []);
 
-  const getCanvasCoords = useCallback((clientX, clientY) => {
+  const getCanvasCoords = useCallback((clientX: any, clientY: any) => {
     return {
       x: (clientX - camera.x) / camera.zoom,
       y: (clientY - camera.y) / camera.zoom
     };
   }, [camera]);
 
-  const handleMouseDown = useCallback((e) => {
+  const handleMouseDown = useCallback((e: any) => {
     if (e.target.closest('.n8n-node') || e.target.closest('.sticky-note')) return;
 
     if (activeTool === 'cursor') {
@@ -310,7 +310,7 @@ const Engine = () => {
     } else if (activeTool === 'sticky') {
       if (viewMode === 'builder') return;
       const coords = getCanvasCoords(e.clientX, e.clientY);
-      setStickyNotes(prev => [...prev, { id: Date.now(), x: coords.x, y: coords.y, text: '', color: '#A259FF' }]);
+      setStickyNotes((prev: any) => [...prev, { id: Date.now(), x: coords.x, y: coords.y, text: '', color: '#A259FF' }]);
       setActiveTool('cursor');
     } else if (activeTool === 'text') {
       const coords = getCanvasCoords(e.clientX, e.clientY);
@@ -324,7 +324,7 @@ const Engine = () => {
   }, [activeTool, canvasLocked, viewMode, getCanvasCoords]);
 
   const handleMouseMove = useCallback(
-    (e) => {
+    (e: any) => {
       if (canvasRef.current) {
         const rect = canvasRef.current.getBoundingClientRect();
         canvasRef.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
@@ -336,7 +336,7 @@ const Engine = () => {
         const dx = coords.x - draggingAppElement.startMouseX;
         const dy = coords.y - draggingAppElement.startMouseY;
         if (draggingAppElement.type === 'sticky') {
-          setStickyNotes(prev => prev.map(n => n.id === draggingAppElement.id ? { ...n, x: draggingAppElement.startX + dx, y: draggingAppElement.startY + dy } : n));
+          setStickyNotes((prev: any) => prev.map((n: any) => n.id === draggingAppElement.id ? { ...n, x: draggingAppElement.startX + dx, y: draggingAppElement.startY + dy } : n));
         }
       }
 
@@ -345,18 +345,18 @@ const Engine = () => {
         const newWidth = Math.max(120, coords.x - resizingAppElement.elemX);
         const newHeight = Math.max(120, coords.y - resizingAppElement.elemY);
         if (resizingAppElement.type === 'sticky') {
-           setStickyNotes(prev => prev.map(n => n.id === resizingAppElement.id ? { ...n, width: newWidth, height: newHeight } : n));
+           setStickyNotes((prev: any) => prev.map((n: any) => n.id === resizingAppElement.id ? { ...n, width: newWidth, height: newHeight } : n));
         }
       }
 
       if (isPanning) {
         const dx = e.clientX - lastMousePos.current.x;
         const dy = e.clientY - lastMousePos.current.y;
-        setCamera((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+        setCamera((prev: any) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
         lastMousePos.current = { x: e.clientX, y: e.clientY };
       } else if (isDrawing && activeTool === 'highlighter') {
         const coords = getCanvasCoords(e.clientX, e.clientY);
-        setCurrentStroke(prev => [...prev, coords]);
+        setCurrentStroke((prev: any) => [...prev, coords]);
       }
     },
     [isPanning, isDrawing, activeTool, getCanvasCoords, draggingAppElement, resizingAppElement]
@@ -370,11 +370,11 @@ const Engine = () => {
       setIsDrawing(false);
       if (currentStroke && currentStroke.length > 0) {
         const strokeId = Date.now();
-        setStrokes(prev => [...prev, { id: strokeId, points: currentStroke }]);
+        setStrokes((prev: any) => [...prev, { id: strokeId, points: currentStroke }]);
         setCurrentStroke(null);
         
         setTimeout(() => {
-          setStrokes(prev => prev.filter(s => s.id !== strokeId));
+          setStrokes((prev: any) => prev.filter((s: any) => s.id !== strokeId));
         }, 2500);
       }
     }
@@ -396,7 +396,7 @@ const Engine = () => {
         const newName = projectPrompt.trim().substring(0, 50) + (projectPrompt.trim().length > 50 ? '...' : '');
         await supabase.from('sequences').update({ name: newName }).eq('id', seqId);
       }
-    } catch(err) {
+    } catch(err: any) {
       console.error("Failed to update sequence name", err);
     }
 
@@ -404,37 +404,37 @@ const Engine = () => {
     store.resetExecution(Object.keys(layout)); 
 
     // Check if we're running a deployed template or default schema
-    const activeTemplate = deployedTemplateId ? templates.find(t => t.id === deployedTemplateId) : null;
+    const activeTemplate = deployedTemplateId ? templates.find((t: any) => t.id === deployedTemplateId) : null;
 
     if (activeTemplate) {
       // --- DEPLOYED TEMPLATE EXECUTION (topological order) ---
-      const depths = {};
-      const adj = {};
-      const inDegree = {};
+      const depths: Record<string, number> = {};
+      const adj: Record<string, any[]> = {};
+      const inDegree: Record<string, number> = {};
       
-      activeTemplate.blocks.forEach(b => {
+      activeTemplate.blocks.forEach((b: any) => {
         adj[b.id] = [];
         inDegree[b.id] = 0;
         depths[b.id] = 0;
       });
       
-      activeTemplate.connections.forEach(c => {
+      activeTemplate.connections.forEach((c: any) => {
         if (adj[c.sourceBlockId] && inDegree[c.targetBlockId] !== undefined) {
-          adj[c.sourceBlockId].push(c.targetBlockId);
-          inDegree[c.targetBlockId]++;
+          adj[c.sourceBlockId]!.push(c.targetBlockId);
+          inDegree[c.targetBlockId]!++;
         }
       });
       
-      let queue = [];
+      let queue: any[] = [];
       Object.keys(inDegree).forEach(id => {
         if (inDegree[id] === 0) queue.push(id);
       });
       
       while (queue.length > 0) {
         const curr = queue.shift();
-        (adj[curr] || []).forEach(neighbor => {
-          depths[neighbor] = Math.max(depths[neighbor], depths[curr] + 1);
-          inDegree[neighbor]--;
+        (adj[curr] || []).forEach((neighbor: any) => {
+          depths[neighbor] = Math.max(depths[neighbor]!, depths[curr]! + 1);
+          inDegree[neighbor]!--;
           if (inDegree[neighbor] === 0) queue.push(neighbor);
         });
       }
@@ -446,23 +446,23 @@ const Engine = () => {
         const phaseIndex = Math.min(d, WORKFLOW_PHASES.length - 1);
         store.setCurrentPhaseIndex(phaseIndex);
         
-        const nodesAtDepth = activeTemplate.blocks.filter(b => (depths[b.id] || 0) === d).map(b => b.id);
+        const nodesAtDepth = activeTemplate.blocks.filter((b: any) => (depths[b.id] || 0) === d).map((b: any) => b.id);
         const currentActive = store.animationState.activeNodes;
         store.setAnimationState({ activeNodes: [...currentActive, ...nodesAtDepth] });
         
         let neuralContext = '';
         if (d > 0) {
-          const prevNodes = activeTemplate.blocks.filter(b => (depths[b.id] || 0) === d - 1).map(b => b.id);
+          const prevNodes = activeTemplate.blocks.filter((b: any) => (depths[b.id] || 0) === d - 1).map((b: any) => b.id);
           const currentResults = store.nodeResults || {};
           neuralContext = prevNodes
-            .map(id => currentResults[id]?.content)
+            .map((id: any) => currentResults[id]?.content)
             .filter(Boolean)
             .join('\n\n---\n\n');
         }
         
-        await Promise.all(nodesAtDepth.map(async (nId) => {
+        await Promise.all(nodesAtDepth.map(async (nId: any) => {
           store.setNodeState(nId, 'running');
-          const nodeInfo = layout[nId];
+          const nodeInfo = (layout as any)[nId];
           const agentData = {
             id: nId,
             phaseLabel: phaseLabels[phaseIndex] || `Phase ${d + 1}`,
@@ -474,7 +474,7 @@ const Engine = () => {
             const taskObj = `Project directive: ${store.projectPrompt}\n\nExecute agentic objective for ${agentData.name} within the ${agentData.phaseLabel} architecture phase. Provide deep expert analysis based on the project directive.`;
             const result = await callLLM(taskObj, agentData, neuralContext, store.projectAttachment);
             store.setNodeResult(nId, result);
-          } catch (err) {
+          } catch (err: any) {
             console.error(`[${nId}] Error:`, err);
           }
           store.setNodeState(nId, 'completed');
@@ -494,39 +494,39 @@ const Engine = () => {
     } else {
       // --- DEFAULT SCHEMA EXECUTION (original logic) ---
       for (let i = 0; i < WORKFLOW_PHASES.length; i++) {
-        const phase = WORKFLOW_PHASES[i];
+        const phase = WORKFLOW_PHASES[i]!;
         store.setCurrentPhaseIndex(i);
         
-        const phaseNodes = phase.categories.map(c => `${phase.id}::${c}`);
+        const phaseNodes = phase.categories.map((c: any) => `${phase.id}::${c}`);
         const currentActive = store.animationState.activeNodes;
         store.setAnimationState({ activeNodes: [...currentActive, ...phaseNodes] });
 
         let neuralContext = '';
         if (i > 0) {
-          const prevPhase = WORKFLOW_PHASES[i - 1];
-          const prevPhaseNodes = prevPhase.categories.map(c => `${prevPhase.id}::${c}`);
+          const prevPhase = WORKFLOW_PHASES[i - 1]!;
+          const prevPhaseNodes = prevPhase.categories.map((c: any) => `${prevPhase.id}::${c}`);
           const currentResults = store.nodeResults || {};
           neuralContext = prevPhaseNodes
-            .map(id => currentResults[id]?.content)
+            .map((id: any) => currentResults[id]?.content)
             .filter(Boolean)
             .join('\n\n---\n\n');
         }
 
-        await Promise.all(phaseNodes.map(async (nId) => {
+        await Promise.all(phaseNodes.map(async (nId: any) => {
           store.setNodeState(nId, 'running');
           const nodeCategory = nId.split('::')[1];
           const agentData = {
             id: nId,
             phaseLabel: phase.label,
             categoryName: nodeCategory,
-            name: layout[nId]?.category?.name || nodeCategory
+            name: (layout as any)[nId]?.category?.name || nodeCategory
           };
 
           try {
             const taskObj = `Project directive: ${store.projectPrompt}\n\nExecute agentic objective for ${agentData.name} within the ${agentData.phaseLabel} architecture phase. Provide deep expert analysis based on the project directive.`;
             const result = await callLLM(taskObj, agentData, neuralContext, store.projectAttachment);
             store.setNodeResult(nId, result);
-          } catch (err) {
+          } catch (err: any) {
             console.error(`[${nId}] Error:`, err);
           }
           store.setNodeState(nId, 'completed');
@@ -536,7 +536,7 @@ const Engine = () => {
           setPhaseOverlay({ 
             phase: i + 1, 
             phaseName: phase.label, 
-            nextPhaseName: WORKFLOW_PHASES[i + 1].label 
+            nextPhaseName: WORKFLOW_PHASES[i + 1]!.label 
           });
           await new Promise(r => setTimeout(r, 2000));
           setPhaseOverlay(null);
@@ -559,7 +559,7 @@ const Engine = () => {
 
   const rebootSequence = () => {
     const store = useWorkflowStore.getState();
-    const nodes = Object.values(layout).map(n => n.id);
+    const nodes = Object.values(layout as any).map((n: any) => n.id);
     store.resetExecution(nodes);
     store.setProjectPrompt('');
     setShowOutputScreen(false);
@@ -570,7 +570,7 @@ const Engine = () => {
 
     // Sticky note branch
     if (selectedNodeId.startsWith('sticky-')) {
-      const stickyNote = stickyNotes.find(n => `sticky-${n.id}` === selectedNodeId);
+      const stickyNote = stickyNotes.find((n: any) => `sticky-${n.id}` === selectedNodeId);
       const STICKY_COLORS = ['#A259FF', '#46B1FF', '#DEF767', '#FF6A6A', '#FACC15'];
       return (
         <div className="flex-1 mt-4 flex flex-col gap-4">
@@ -579,15 +579,12 @@ const Engine = () => {
             {STICKY_COLORS.map(color => (
               <button
                 key={color}
+                title={`Set color to ${color}`}
+                aria-label={`Set color to ${color}`}
                 onClick={() => {
-                  setStickyNotes(prev => prev.map(n => n.id === stickyNote?.id ? { ...n, color } : n));
+                  setStickyNotes((prev: any) => prev.map((n: any) => n.id === stickyNote?.id ? { ...n, color } : n));
                 }}
-                className="w-5 h-5 rounded-full border-2 transition-all hover:scale-125"
-                style={{
-                  background: color,
-                  borderColor: stickyNote?.color === color ? '#fff' : 'transparent',
-                  boxShadow: stickyNote?.color === color ? `0 0 10px ${color}` : 'none',
-                }}
+                className={`color-picker-btn color-${color.replace('#', '')} ${stickyNote?.color === color ? 'is-active' : ''}`}
               />
             ))}
           </div>
@@ -595,13 +592,13 @@ const Engine = () => {
             className="w-full min-h-[200px] bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 text-sm text-slate-200 leading-relaxed font-secondary resize-none outline-none focus:border-[#A259FF]/40 transition-colors shadow-inner custom-scrollbar"
             placeholder="Write your insights here..."
             value={stickyNote?.text || ''}
-            onChange={(e) => {
-              setStickyNotes(prev => prev.map(n => n.id === stickyNote?.id ? { ...n, text: e.target.value } : n));
+            onChange={(e: any) => {
+              setStickyNotes((prev: any) => prev.map((n: any) => n.id === stickyNote?.id ? { ...n, text: e.target.value } : n));
             }}
           />
           <button
             onClick={() => {
-              setStickyNotes(prev => prev.filter(n => n.id !== stickyNote?.id));
+              setStickyNotes((prev: any) => prev.filter((n: any) => n.id !== stickyNote?.id));
               selectNode(null);
             }}
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#ff4b4b]/10 border border-[#ff4b4b]/20 text-[#ff4b4b] text-xs font-bold uppercase tracking-widest hover:bg-[#ff4b4b]/20 transition-colors"
@@ -626,12 +623,12 @@ const Engine = () => {
     return (
       <div className="flex-1 mt-4">
         <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] mb-8 shadow-inner">
-          <p className="text-sm text-slate-400 leading-relaxed font-light">{layout[selectedNodeId]?.category.description}</p>
+          <p className="text-sm text-slate-400 leading-relaxed font-light">{(layout as any)[selectedNodeId]?.category.description}</p>
         </div>
         <span className="text-[10px] text-[#A259FF] uppercase font-bold tracking-widest mb-4 block">Recommended External APIs</span>
         <div className="flex flex-col gap-3">
-          {layout[selectedNodeId]?.category.tools.map(tid => {
-            const toolInfo = TOOL_REGISTRY[tid];
+          {(layout as any)[selectedNodeId]?.category.tools.map((tid: any) => {
+            const toolInfo = (TOOL_REGISTRY as any)[tid];
             return (
               <div key={tid} className="bg-gradient-to-r from-white/[0.03] to-transparent border border-white/[0.05] p-4 rounded-xl cursor-default transition-all group">
                 <div className="flex justify-between items-start mb-1">
@@ -721,11 +718,13 @@ const Engine = () => {
                  type="file"
                  accept=".txt,.md,.json,.pdf"
                  className="hidden"
+                 title="Upload attachment"
+                 aria-label="Upload attachment"
                  onChange={(e) => {
                    const file = e.target.files?.[0];
                    if (!file) return;
                    const reader = new FileReader();
-                   reader.onload = (ev) => {
+                   reader.onload = (ev: any) => {
                      setProjectAttachment({ name: file.name, content: ev.target.result, type: file.type });
                    };
                    reader.readAsText(file);
@@ -772,6 +771,8 @@ const Engine = () => {
                 <button 
                   onClick={() => setProjectAttachment(null)}
                   className="ml-2 hover:text-white transition-colors"
+                  title="Remove attachment"
+                  aria-label="Remove attachment"
                 >
                   <X size={12} />
                 </button>
@@ -811,21 +812,19 @@ const Engine = () => {
         <div
           ref={canvasRef}
           id="canvas-bg"
-          className="flex-1 relative overflow-hidden canvas-grid"
+          className={`flex-1 relative overflow-hidden canvas-grid ${isPanning ? 'is-panning' : ''}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
         >
           <div
-            className="absolute origin-top-left flex pointer-events-none"
+            className="absolute origin-top-left flex pointer-events-none canvas-content"
             style={{
-              transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
-              width: 3000,
-              height: 2000,
-              willChange: 'transform',
-            }}
+              '--canvas-x': `${camera.x}px`,
+              '--canvas-y': `${camera.y}px`,
+              '--canvas-zoom': camera.zoom,
+            } as React.CSSProperties}
           >
             {/* Background Phase Labels */}
             {viewMode === 'pipeline' && WORKFLOW_PHASES.map((p, idx) => {
@@ -867,10 +866,10 @@ const Engine = () => {
                 </marker>
               </defs>
 
-              {strokes.map((stroke) => (
+              {strokes.map((stroke: any) => (
                 <motion.polyline 
                   key={`stroke-${stroke.id}`} 
-                  points={stroke.points.map(p => `${p.x},${p.y}`).join(' ')} 
+                  points={stroke.points.map((p: any) => `${p.x},${p.y}`).join(' ')} 
                   stroke="#A259FF" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" 
                   fill="none" 
                   initial={{ opacity: 0.25 }}
@@ -881,15 +880,15 @@ const Engine = () => {
               ))}
               {currentStroke && (
                 <polyline 
-                  points={currentStroke.map(p => `${p.x},${p.y}`).join(' ')} 
+                  points={currentStroke.map((p: any) => `${p.x},${p.y}`).join(' ')} 
                   stroke="#A259FF" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" 
                   fill="none" opacity="0.25" style={{ filter: 'blur(3px)' }} 
                 />
               )}
 
-              {viewMode === 'pipeline' && bundledEdges.map((edge, idx) => {
-                const fromLayout = layout[edge.from];
-                const toLayout = layout[edge.to];
+              {viewMode === 'pipeline' && bundledEdges.map((edge: any, idx: any) => {
+                const fromLayout = (layout as any)[edge.from];
+                const toLayout = (layout as any)[edge.to];
                 if (!fromLayout || !toLayout) return null;
 
                 const fromAnchor = { x: fromLayout.x + 140, y: fromLayout.y + 70 };
@@ -908,7 +907,7 @@ const Engine = () => {
                   />
                 );
               })}
-              {viewMode === 'pipeline' && customEdges.map((edge, idx) => {
+              {viewMode === 'pipeline' && customEdges.map((edge: any, idx: any) => {
                 const isActive = nodeStates[edge.from] === 'running' || nodeStates[edge.from] === 'completed';
                 return (
                   <path
@@ -928,7 +927,7 @@ const Engine = () => {
             )}
 
             {/* Agent Nodes */}
-            {viewMode === 'pipeline' && Object.values(layout).map((node) => {
+            {viewMode === 'pipeline' && Object.values(layout as any).map((node: any) => {
               const animState = useWorkflowStore.getState().animationState;
               const isVisible = animState.activeNodes.includes(node.id) || graphStatus === 'ready' || graphStatus === 'completed' || graphStatus === 'running'; 
               
@@ -953,7 +952,7 @@ const Engine = () => {
               )
             })}
             {/* Sticky Notes */}
-            {viewMode === 'pipeline' && stickyNotes.map(note => {
+            {viewMode === 'pipeline' && stickyNotes.map((note: any) => {
               const noteColor = note.color || '#A259FF';
               const noteW = note.width || 220;
               const noteH = note.height || 160;
@@ -963,8 +962,8 @@ const Engine = () => {
                 className={`absolute sticky-note p-3 rounded-2xl z-30 transition-all font-secondary flex flex-col group shadow-2xl cursor-pointer ${
                   selectedNodeId === `sticky-${note.id}` ? 'border' : 'border border-transparent'
                 }`}
-                onMouseDown={(e) => {
-                  if (e.target.classList.contains('resize-handle')) {
+                onMouseDown={(e: any) => {
+                  if ((e.target as any).classList.contains('resize-handle')) {
                     e.stopPropagation();
                     setResizingAppElement({ type: 'sticky', id: note.id, elemX: note.x, elemY: note.y });
                     return;
@@ -987,7 +986,9 @@ const Engine = () => {
                 <div className="w-full h-1.5 rounded-t-xl absolute top-0 left-0" style={{ background: `linear-gradient(to right, ${noteColor}, ${noteColor}80)` }} />
                 
                 <button
-                  onClick={(e) => {
+                  title="Delete sticky note"
+                  aria-label="Delete sticky note"
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setStickyNotes(prev => prev.filter(n => n.id !== note.id));
                     if (selectedNodeId === `sticky-${note.id}`) {
