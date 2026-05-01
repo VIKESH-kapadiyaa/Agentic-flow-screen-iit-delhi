@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useBuilderStore } from '../lib/builderStore';
 import AgentBlockNode from './AgentBlockNode';
+import WebhookBlockNode from './WebhookBlockNode';
 import { Trash2 } from 'lucide-react';
 
 interface Coords { x: number; y: number; }
@@ -303,13 +304,20 @@ const BuilderCanvas = ({ activeTool, setActiveTool, getCanvasCoords }: BuilderCa
          </g>
       </svg>
       
-      {/* Agent Blocks */}
+      {/* Agent & Webhook Blocks */}
       {blocks.map((block: any) => (
         <div key={block.id} className="pointer-events-auto absolute" onMouseDown={(e) => handleBlockMouseDown(e, block)}>
-          <AgentBlockNode
-            block={block}
-            isSelected={selectedElementId === block.id}
-          />
+          {block.type === 'webhook' ? (
+            <WebhookBlockNode
+              block={block}
+              isSelected={selectedElementId === block.id}
+            />
+          ) : (
+            <AgentBlockNode
+              block={block}
+              isSelected={selectedElementId === block.id}
+            />
+          )}
         </div>
       ))}
 

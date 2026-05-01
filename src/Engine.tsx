@@ -87,6 +87,16 @@ const Engine = () => {
     const loadCanvasData = async () => {
       try {
         setGraphStatus('loading');
+
+        // Clear stale state before loading
+        useBuilderStore.setState({
+          blocks: [],
+          connections: [],
+          stickyNotes: [],
+          textLabels: [],
+          selectedElementId: null,
+        });
+
         const seqId = localStorage.getItem('active_sequence_id');
         if (seqId) {
           const { data } = await supabase.from('sequences').select('canvas_state, title').eq('id', seqId).single();
@@ -107,9 +117,12 @@ const Engine = () => {
                  currentPhaseIndex: state.execution.currentPhaseIndex || 0,
                  projectPrompt: state.execution.projectPrompt || (data.title !== 'New Neural Sequence' ? data.title : '')
                });
-             } else if (data.title && data.title !== 'New Neural Sequence') {
+             } else if (!state.execution?.projectPrompt && data.title && data.title !== 'Untitled Flow') {
                useWorkflowStore.setState({ projectPrompt: data.title });
              }
+             
+             // Initialize flowTitle
+             useWorkflowStore.setState({ flowTitle: data.title || 'Untitled Flow' });
           }
           
           // Fetch templates for the user
@@ -164,9 +177,10 @@ const Engine = () => {
       const state = useBuilderStore.getState();
       const workflowState = useWorkflowStore.getState();
       
-      const getSessionName = (prompt: string) => {
+      const getSessionName = (title: string, prompt: string) => {
+        if (title && title !== 'Untitled Flow') return title;
         const trimmed = prompt?.trim().replace(/\s+/g, ' ') || '';
-        if (!trimmed || trimmed === 'New Neural Sequence') return 'Untitled Sequence';
+        if (!trimmed) return 'Untitled Flow';
         return trimmed.substring(0, 50) + (trimmed.length > 50 ? '...' : '');
       };
 
@@ -185,7 +199,7 @@ const Engine = () => {
 
       return {
         canvas_state,
-        title: getSessionName(workflowState.projectPrompt),
+        title: getSessionName(workflowState.flowTitle, workflowState.projectPrompt),
         updated_at: new Date().toISOString()
       };
     };

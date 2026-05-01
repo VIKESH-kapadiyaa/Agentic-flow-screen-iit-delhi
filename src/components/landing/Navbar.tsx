@@ -11,8 +11,8 @@ export const Navbar = ({ user, setView, onInit }: NavbarProps) => (
   <nav className="fixed w-full top-0 z-50 bg-[#030303]/70 backdrop-blur-xl border-b border-white/[0.05]">
     <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-zinc-800 to-zinc-950 border border-white/10 flex items-center justify-center shadow-lg shadow-black/50">
-          <Network className="w-5 h-5 text-zinc-100" />
+        <div className="flex items-center justify-center">
+          <img src="/logo.png" alt="AgenticFlow Logo" className="w-10 h-10 object-contain" />
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-100 cursor-pointer" onClick={() => setView('landing')}>Agentic<span className="text-zinc-500 font-medium">Flow</span></h1>

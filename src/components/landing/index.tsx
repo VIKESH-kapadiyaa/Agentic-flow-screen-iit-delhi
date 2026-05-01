@@ -66,12 +66,7 @@ export default function LandingPage() {
             <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-zinc-800/20 rounded-full blur-[150px] pointer-events-none z-0"></div>
 
             <div className="max-w-7xl mx-auto text-center relative z-10 flex flex-col items-center mt-12 w-full">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 text-xs font-mono mb-12 backdrop-blur-sm mt-8">
-                <Activity className="w-3.5 h-3.5" />
-                <span>ENTERPRISE NEURAL ENGINE 2.4</span>
-              </div>
-              
-              <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-zinc-200 to-zinc-500 tracking-tight mb-8 leading-[1.1]">
+              <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-zinc-200 to-zinc-500 tracking-tight mb-8 leading-[1.1] mt-8">
                 Design Multi-Agent <br />
                 Pipelines Visually.
               </h1>
@@ -231,8 +226,8 @@ export default function LandingPage() {
           <footer className="border-t border-white/5 pt-20 pb-32 px-6 bg-[#030303] relative z-20 mt-20 w-full">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center">
-                  <Network className="w-5 h-5 text-zinc-400" />
+                <div className="flex items-center justify-center">
+                  <img src="/logo.png" alt="AgenticFlow Logo" className="w-10 h-10 object-contain grayscale opacity-70" />
                 </div>
                 <span className="text-lg font-medium text-zinc-200 tracking-tight">Agentic<span className="text-zinc-600">Flow</span></span>
               </div>

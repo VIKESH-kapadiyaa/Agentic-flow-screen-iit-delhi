@@ -22,6 +22,7 @@ export interface BuilderStore {
   updateTextLabel: (id: string, text: string) => void;
   deleteTextLabel: (id: string) => void;
   addBlock: (position?: any) => void;
+  addWebhookBlock: (position?: any) => void;
   updateBlock: (id: string, updates: any) => void;
   deleteBlock: (id: string) => void;
   connectBlocks: (sourceId: string, targetId: string, sourcePort: string, targetPort: string) => void;
@@ -34,7 +35,7 @@ export interface BuilderStore {
   setTemplates: (templates: any[]) => void;
   deployProject: (name?: string) => Promise<void>;
   saveAsTemplate: (name?: string) => Promise<void>;
-  applyTemplate: (templateId: string) => void;
+  applyTemplate: (templateId: string) => Promise<void>;
   updateTemplate: (id: string, updates: any) => Promise<void>;
   deleteTemplate: (id: string) => Promise<void>;
 }
@@ -76,23 +77,74 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
 
   // --- BLOCKS ---
   addBlock: (position: any) => {
+    const state = get();
+    // Smart positioning: place to the right of the rightmost block
+    let smartPos = position;
+    if (!smartPos) {
+      if (state.blocks.length === 0) {
+        smartPos = { x: 300, y: 300 };
+      } else {
+        const rightmost = state.blocks.reduce((max: any, b: any) => {
+          const bRight = b.position.x + (b.size?.width || 260);
+          const mRight = max.position.x + (max.size?.width || 260);
+          return bRight > mRight ? b : max;
+        }, state.blocks[0]);
+        smartPos = {
+          x: rightmost.position.x + (rightmost.size?.width || 260) + 80,
+          y: rightmost.position.y
+        };
+      }
+    }
     const newBlock = {
       id: generateId(),
+      type: 'agent',
       name: 'New Agent',
       description: 'Describe the agent objective...',
       apiKey: '',
-      phase: 'discover', // default phase for agent buckets
+      phase: 'discover',
       waitConfig: { type: 'none', delay: 0 },
       triggerConfig: { type: 'manual' },
-      position: position || { 
-        x: 400 + (Math.random() * 200), 
-        y: 400 + (Math.random() * 200) 
-      },
+      position: smartPos,
     };
-    set((state) => ({
+    set({
       blocks: [...state.blocks, newBlock],
       selectedElementId: newBlock.id
-    }));
+    });
+  },
+
+  addWebhookBlock: (position: any) => {
+    const state = get();
+    let smartPos = position;
+    if (!smartPos) {
+      if (state.blocks.length === 0) {
+        smartPos = { x: 300, y: 300 };
+      } else {
+        const rightmost = state.blocks.reduce((max: any, b: any) => {
+          const bRight = b.position.x + (b.size?.width || 260);
+          const mRight = max.position.x + (max.size?.width || 260);
+          return bRight > mRight ? b : max;
+        }, state.blocks[0]);
+        smartPos = {
+          x: rightmost.position.x + (rightmost.size?.width || 260) + 80,
+          y: rightmost.position.y
+        };
+      }
+    }
+    const newBlock = {
+      id: generateId(),
+      type: 'webhook',
+      name: 'Webhook Bridge',
+      description: 'Links to another workflow sequence...',
+      linkedSequenceId: null as string | null,
+      linkedSequenceName: '',
+      position: smartPos,
+      waitConfig: { type: 'none', delay: 0 },
+      triggerConfig: { type: 'event' },
+    };
+    set({
+      blocks: [...state.blocks, newBlock],
+      selectedElementId: newBlock.id
+    });
   },
   
   updateBlock: (id: any, updates: any) => set((state) => ({
@@ -208,12 +260,12 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
       }
   },
 
-  applyTemplate: (templateId: any) => set((state) => {
+  applyTemplate: async (templateId: any) => {
+    const state = get();
     const template = state.templates.find(t => t.id === templateId);
-    if (!template) return state;
+    if (!template) return;
     
-    // We should regenerate IDs so we don't conflict. 
-    // For simplicity, we just clone blocks with new IDs and update connections
+    // Regenerate IDs so we don't conflict
     const idMap: Record<string, string> = {};
     const newBlocks = template.blocks.map((b: any) => {
       const newId = generateId();
@@ -224,17 +276,43 @@ export const useBuilderStore = create<BuilderStore>((set, get) => ({
     const newConns = template.connections.map((c: any) => ({
       id: generateId(),
       sourceBlockId: idMap[c.sourceBlockId] || c.sourceBlockId, 
-      targetBlockId: idMap[c.targetBlockId] || c.targetBlockId
+      targetBlockId: idMap[c.targetBlockId] || c.targetBlockId,
+      sourcePort: c.sourcePort,
+      targetPort: c.targetPort
     }));
 
-    return {
+    // Create a NEW sequence in Supabase so we don't overwrite the old one
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const newSeq = {
+        user_id: session.user.id,
+        title: template.name || 'From Template',
+        status: 'Idle',
+        status_color: '#46B1FF',
+        agents_active: 0,
+        total_agents: newBlocks.length,
+        canvas_state: {
+          blocks: newBlocks,
+          connections: newConns,
+          stickyNotes: [],
+          textLabels: [],
+        }
+      };
+      const { data } = await supabase.from('sequences').insert([newSeq]).select().single();
+      if (data) {
+        localStorage.setItem('active_sequence_id', data.id);
+      }
+    }
+
+    set({
       blocks: newBlocks,
       connections: newConns,
       stickyNotes: [],
+      textLabels: [],
       selectedElementId: null,
-      viewMode: 'builder' // switch to builder automatically
-    };
-  }),
+      viewMode: 'builder'
+    });
+  },
   
   updateTemplate: async (id: any, updates: any) => {
     set((state) => ({

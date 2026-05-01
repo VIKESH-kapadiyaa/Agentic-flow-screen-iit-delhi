@@ -65,8 +65,8 @@ export const RegisterView = ({ onRegister }: RegisterViewProps) => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-zinc-600/10 rounded-full blur-[120px] pointer-events-none"></div>
       
       <div className="w-full max-w-md bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 relative z-10 shadow-2xl">
-        <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center mb-6 shadow-inner">
-          {isLogin ? <LogIn className="w-6 h-6 text-zinc-300" /> : <UserPlus className="w-6 h-6 text-zinc-300" />}
+        <div className="flex items-center justify-center mb-6">
+          <img src="/logo.png" alt="AgenticFlow Logo" className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(162,89,255,0.3)]" />
         </div>
         <h2 className="text-3xl font-bold text-zinc-100 mb-2 tracking-tight">
           {isLogin ? 'Welcome Back' : 'Create Profile'}
