@@ -20,10 +20,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'agentic-flow-default-secret-change-in-production!!';
 const KEY_STORE_PATH = join(__dirname, 'memory', 'keys.enc.json');
-
-// Ensure memory directory exists
 const memDir = dirname(KEY_STORE_PATH);
 if (!existsSync(memDir)) mkdirSync(memDir, { recursive: true });
+
+const PROJECT_KEY_STORE_PATH = join(__dirname, 'memory', 'project_keys.enc.json');
 
 function deriveKey(secret) {
   return crypto.scryptSync(secret, 'agentic-flow-salt', 32);
@@ -59,17 +59,38 @@ function saveKeyStore(store) {
   writeFileSync(KEY_STORE_PATH, JSON.stringify(store, null, 2));
 }
 
+function loadProjectKeyStore() {
+  if (!existsSync(PROJECT_KEY_STORE_PATH)) return {};
+  try { return JSON.parse(readFileSync(PROJECT_KEY_STORE_PATH, 'utf8')); }
+  catch { return {}; }
+}
+
+function saveProjectKeyStore(store) {
+  writeFileSync(PROJECT_KEY_STORE_PATH, JSON.stringify(store, null, 2));
+}
+
 /**
  * Resolve the API key for a user.
- * Priority: server-stored encrypted key > fallback key from client.
+ * Priority: project-stored encrypted key > global-stored encrypted key > fallback key from client.
  */
-function resolveApiKey(userId, fallbackKey) {
+function resolveApiKey(userId, sequenceId, fallbackKey) {
   if (userId) {
+    // 1. Try project-scoped key
+    if (sequenceId) {
+      const pStore = loadProjectKeyStore();
+      const pKey = `${userId}:${sequenceId}`;
+      if (pStore[pKey]) {
+        try { return decryptKey(pStore[pKey]); }
+        catch (err) { console.error('[Server] Project key decryption failed:', err.message); }
+      }
+    }
+
+    // 2. Try global key
     const store = loadKeyStore();
     const entry = store[userId];
     if (entry) {
       try { return decryptKey(entry); }
-      catch (err) { console.error('[Server] Key decryption failed:', err.message); }
+      catch (err) { console.error('[Server] Global key decryption failed:', err.message); }
     }
   }
   return fallbackKey || '';
@@ -124,10 +145,32 @@ app.post('/api/keys/save', (req, res) => {
 
 // Check if a key exists for a user (never returns the actual key)
 app.get('/api/keys/status/:userId', (req, res) => {
+  const { userId } = req.params;
   const store = loadKeyStore();
-  const entry = store[req.params.userId];
+  const entry = store[userId];
   if (!entry) return res.json({ hasKey: false });
-  res.json({ hasKey: true, lastFour: entry.lastFour, savedAt: entry.savedAt });
+  res.json({ hasKey: true, lastFour: entry.lastFour || '****', savedAt: entry.savedAt });
+});
+
+app.get('/api/keys/project-status/:userId/:sequenceId', (req, res) => {
+  const { userId, sequenceId } = req.params;
+  const store = loadProjectKeyStore();
+  const entry = store[`${userId}:${sequenceId}`];
+  if (!entry) return res.json({ hasKey: false });
+  res.json({ hasKey: true, lastFour: entry.lastFour || '****' });
+});
+
+app.post('/api/keys/save-project', (req, res) => {
+  const { userId, sequenceId, apiKey } = req.body;
+  if (!userId || !sequenceId || !apiKey) return res.status(400).json({ error: 'Missing data' });
+
+  const store = loadProjectKeyStore();
+  const encrypted = encryptKey(apiKey);
+  encrypted.lastFour = apiKey.slice(-4);
+  store[`${userId}:${sequenceId}`] = encrypted;
+  saveProjectKeyStore(store);
+
+  res.json({ success: true });
 });
 
 // Delete a stored key
@@ -136,6 +179,14 @@ app.delete('/api/keys/:userId', (req, res) => {
   delete store[req.params.userId];
   saveKeyStore(store);
   console.log(`[Server] ✗ API key deleted for user ${req.params.userId.substring(0, 8)}...`);
+  res.json({ success: true });
+});
+
+app.delete('/api/keys/project/:userId/:sequenceId', (req, res) => {
+  const { userId, sequenceId } = req.params;
+  const store = loadProjectKeyStore();
+  delete store[`${userId}:${sequenceId}`];
+  saveProjectKeyStore(store);
   res.json({ success: true });
 });
 
@@ -167,22 +218,23 @@ app.post('/api/keys/verify', async (req, res) => {
 // ── LLM EXECUTION ENDPOINT ─────────────────────────────────────────
 
 app.post('/api/llm', async (req, res) => {
-  const { userTask, agent, neuralContext, activeKey, userId } = req.body;
+  const { userTask, agent, neuralContext, activeKey, userId, sequenceId } = req.body;
 
   console.log(`[Server] Incoming request for agent: ${agent?.name || 'unknown'}, phase: ${agent?.phaseLabel || 'unknown'}`);
 
-  // Resolve key: prefer server-stored encrypted key, fall back to client-provided key
-  const resolvedKey = resolveApiKey(userId, activeKey);
+  // Resolve key: project > global > client-provided
+  const resolvedKey = resolveApiKey(userId, sequenceId, activeKey);
 
   if (!resolvedKey) {
     return res.status(401).json({
-      content: 'No API key configured. Go to Profile → API Key Management to add your key.',
+      _errorType: 'NO_KEY',
+      content: 'No API key configured. Please add a key for this project or globally.',
       ui: `<div style="padding:32px;font-family:Outfit,sans-serif;background:rgba(10,10,15,0.8);backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(255,255,255,0.08);color:#fff;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
           <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#A259FF,#46B1FF);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px;box-shadow:0 8px 32px rgba(162,89,255,0.3)">⚡</div>
           <h2 style="font-size:24px;font-weight:800;margin:0;letter-spacing:-0.5px">Gateway Authentication Required</h2>
         </div>
-        <p style="color:#8b949e;font-size:15px;line-height:1.7;margin:0">Go to your <strong>Profile</strong> page and add your API key in the <strong>API Key Management</strong> section.</p>
+        <p style="color:#8b949e;font-size:15px;line-height:1.7;margin:0">No API key found. Please add your key to proceed.</p>
       </div>`,
     });
   }
@@ -257,25 +309,22 @@ CRITICAL: Return ONLY the raw JSON object. No markdown fences.`;
     });
 
     if (!response.ok) {
-      const errBody = await response.text().catch(() => 'Unknown error');
-      console.error(`[Server] Provider returned ${response.status}:`, errBody.substring(0, 200));
+      console.error(`[Server] Provider Error: ${response.status} ${response.statusText}`);
+      const errJson = await response.json().catch(() => ({}));
+      
+      let errorType = 'PROVIDER_ERROR';
+      if (response.status === 401 || response.status === 403) errorType = 'INVALID_KEY';
+      if (response.status === 429) errorType = 'RATE_LIMIT';
 
-      // Detect invalid key errors
-      if (response.status === 401 || response.status === 403) {
-        return res.status(401).json({
-          content: `[API Key Error] Your API key was rejected by the provider (HTTP ${response.status}). Please update it in Profile → API Key Management.`,
-          ui: `<div style="padding:32px;font-family:Outfit,sans-serif;background:rgba(10,10,15,0.9);backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(239,68,68,0.25)">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-              <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:18px;border:1px solid rgba(239,68,68,0.3)">🔑</div>
-              <h3 style="color:#ef4444;font-size:20px;font-weight:700;margin:0;font-family:Syne,sans-serif">Invalid API Key</h3>
-            </div>
-            <p style="color:#8b949e;font-size:14px;line-height:1.6;margin:0 0 16px 0">Your key was rejected (HTTP ${response.status}). Go to <strong>Profile → API Key Management</strong> to update it.</p>
-          </div>`,
-          _keyError: true,
-        });
-      }
-
-      throw new Error(`API ${response.status}: ${errBody.substring(0, 150)}`);
+      return res.status(response.status).json({
+        _errorType: errorType,
+        _keyError: true,
+        content: `Upstream Provider Error (${response.status}): ${errJson.error?.message || response.statusText}`,
+        ui: `<div style="padding:24px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:16px;color:#ef4444">
+               <h4 style="margin:0 0 8px 0">Execution Halted</h4>
+               <p style="margin:0;font-size:13px;opacity:0.8">${errJson.error?.message || 'The upstream model provider returned an error.'}</p>
+             </div>`
+      });
     }
 
     const data = await response.json();

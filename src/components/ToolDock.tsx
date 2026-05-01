@@ -9,9 +9,10 @@ interface ToolDockProps {
   setCanvasLocked: (locked: boolean) => void;
   onScreenshot: () => void;
   onEraseAll: () => void;
+  onLockToggle?: (locked: boolean) => void;
 }
 
-const ToolDock = ({ activeTool, setActiveTool, canvasLocked, setCanvasLocked, onScreenshot, onEraseAll }: ToolDockProps) => {
+const ToolDock = ({ activeTool, setActiveTool, canvasLocked, setCanvasLocked, onScreenshot, onEraseAll, onLockToggle }: ToolDockProps) => {
   const { viewMode, setViewMode, addBlock } = useBuilderStore();
 
   return (
@@ -32,11 +33,15 @@ const ToolDock = ({ activeTool, setActiveTool, canvasLocked, setCanvasLocked, on
       
       <div className="w-px h-8 bg-white/10 mx-1 self-center" />
       
-      <ToolButton onClick={onEraseAll} icon={<Eraser size={20} />} title="Clear Annotations" />
+      <ToolButton onClick={onEraseAll} icon={<Eraser size={20} />} title="Clear & Reset" />
       <ToolButton onClick={onScreenshot} icon={<Camera size={20} />} title="Screenshot Canvas" />
       <ToolButton 
         active={canvasLocked} 
-        onClick={() => setCanvasLocked?.(!canvasLocked)} 
+        onClick={() => {
+          const newState = !canvasLocked;
+          setCanvasLocked(newState);
+          onLockToggle?.(newState);
+        }} 
         icon={canvasLocked ? <Lock size={20} /> : <Unlock size={20} />} 
         title={canvasLocked ? "Unlock Canvas" : "Lock Canvas"} 
       />

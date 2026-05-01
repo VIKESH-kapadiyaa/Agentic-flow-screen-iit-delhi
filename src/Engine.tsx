@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Sparkles, AlertTriangle, Play, RefreshCw, Trash2, Paperclip, X, FileText, Activity, Folder } from 'lucide-react';
 import confetti from 'canvas-confetti';
-// eslint-disable-next-line no-unused-vars
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Core Schema & Logic
 import { WORKFLOW_PHASES, EDGES, TOOL_REGISTRY } from './data/schema';
@@ -10,13 +9,16 @@ import { validateGraph } from './lib/graphValidator';
 import { computeLayout } from './lib/layoutEngine';
 import { computeEdgePath, bundleEdges } from './lib/edgeRouter';
 import { useWorkflowStore, selectActiveNodeId } from './lib/store';
-import { callLLM } from './lib/llm';
+import { callLLM, checkKeyAvailability, getProjectKeyStatus, getKeyStatus } from './lib/llm';
 import { supabase } from './lib/supabaseClient';
+import { useToastStore } from './lib/toastStore';
+import { ToastContainer } from './components/ToastContainer';
+import { Key, ShieldCheck, Globe, Info as InfoIcon, Eye, EyeOff } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 // Components
 import FlowHeader from './components/FlowHeader';
-import FlowFooter from './components/FlowFooter';
+
 import FlowControls from './components/FlowControls';
 import NodeContainer from './components/NodeContainer';
 import PhaseSummaryBox from './components/PhaseSummaryBox';
@@ -61,11 +63,24 @@ const Engine = () => {
   const [stickyNotes, setStickyNotes] = useState<any[]>([]);
   const [strokes, setStrokes] = useState<any[]>([]);
   const [currentStroke, setCurrentStroke] = useState<any>(null);
+  const currentStrokeRef = useRef<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
   const [canvasLocked, setCanvasLocked] = useState(false);
   const [textLabels, setTextLabels] = useState<any[]>([]);
   const [draggingAppElement, setDraggingAppElement] = useState<any>(null);
   const [resizingAppElement, setResizingAppElement] = useState<any>(null);
+
+  // Zoom-edit state for sticky notes & text labels
+  const [editingStickyId, setEditingStickyId] = useState<number | null>(null);
+  const [editingLabelId, setEditingLabelId] = useState<number | null>(null);
+  const preFocusCamera = useRef<{ x: number; y: number; zoom: number } | null>(null);
+
+  // Key Management State
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyModalType, setKeyModalType] = useState<'NO_KEY' | 'INVALID_KEY' | 'RATE_LIMIT'>('NO_KEY');
+  const [keyInfo, setKeyInfo] = useState<any>({ activeSource: 'none', project: { hasKey: false }, global: { any: false } });
+  const addToast = useToastStore((state) => state.addToast);
 
   // Boot validation
   useEffect(() => {
@@ -74,7 +89,7 @@ const Engine = () => {
         setGraphStatus('loading');
         const seqId = localStorage.getItem('active_sequence_id');
         if (seqId) {
-          const { data } = await supabase.from('sequences').select('canvas_state, name').eq('id', seqId).single();
+          const { data } = await supabase.from('sequences').select('canvas_state, title').eq('id', seqId).single();
           if (data?.canvas_state) {
              const state = data.canvas_state;
              useBuilderStore.setState({
@@ -90,10 +105,10 @@ const Engine = () => {
                  nodeStates: state.execution.nodeStates || {},
                  nodeResults: state.execution.nodeResults || {},
                  currentPhaseIndex: state.execution.currentPhaseIndex || 0,
-                 projectPrompt: state.execution.projectPrompt || (data.name !== 'New Neural Sequence' ? data.name : '')
+                 projectPrompt: state.execution.projectPrompt || (data.title !== 'New Neural Sequence' ? data.title : '')
                });
-             } else if (data.name && data.name !== 'New Neural Sequence') {
-               useWorkflowStore.setState({ projectPrompt: data.name });
+             } else if (data.title && data.title !== 'New Neural Sequence') {
+               useWorkflowStore.setState({ projectPrompt: data.title });
              }
           }
           
@@ -115,40 +130,84 @@ const Engine = () => {
       }
     };
     loadCanvasData();
-  }, [setGraphStatus]);
+
+    // Listen for key errors
+    const handleKeyError = (e: any) => {
+      const { type, message } = e.detail;
+      if (type === 'RATE_LIMIT') {
+        addToast('warning', 'Rate limited. Please wait or switch keys.');
+      } else {
+        setKeyModalType(type);
+        setShowKeyModal(true);
+      }
+    };
+
+    window.addEventListener('agentic:key-error', handleKeyError);
+
+    // Initial key check
+    const seqId = localStorage.getItem('active_sequence_id');
+    if (seqId) {
+      checkKeyAvailability(seqId).then(setKeyInfo);
+    }
+
+    return () => window.removeEventListener('agentic:key-error', handleKeyError);
+  }, [setGraphStatus, addToast]);
 
   // --- AUTO-SAVE BACKGROUND ENGINE ---
+  const lastSavedHashRef = useRef<string>('');
+
   useEffect(() => {
     const seqId = localStorage.getItem('active_sequence_id');
-    if (!seqId || graphStatus === 'loading') return;
+    if (!seqId) return;
 
-    // Debounce the save to prevent hammering the database
-    const timer = setTimeout(async () => {
+    const buildSavePayload = () => {
+      const state = useBuilderStore.getState();
+      const workflowState = useWorkflowStore.getState();
+      
+      const getSessionName = (prompt: string) => {
+        const trimmed = prompt?.trim().replace(/\s+/g, ' ') || '';
+        if (!trimmed || trimmed === 'New Neural Sequence') return 'Untitled Sequence';
+        return trimmed.substring(0, 50) + (trimmed.length > 50 ? '...' : '');
+      };
+
+      const canvas_state = {
+        blocks: state.blocks,
+        connections: state.connections,
+        stickyNotes: state.stickyNotes,
+        textLabels: state.textLabels,
+        execution: {
+          nodeStates: workflowState.nodeStates,
+          nodeResults: workflowState.nodeResults,
+          currentPhaseIndex: workflowState.currentPhaseIndex,
+          projectPrompt: workflowState.projectPrompt
+        }
+      };
+
+      return {
+        canvas_state,
+        title: getSessionName(workflowState.projectPrompt),
+        updated_at: new Date().toISOString()
+      };
+    };
+
+    const interval = setInterval(async () => {
+      if (useWorkflowStore.getState().graphStatus === 'loading') return;
       try {
-        const state = useBuilderStore.getState();
-        const workflowState = useWorkflowStore.getState();
+        const payload = buildSavePayload();
+        const currentHash = JSON.stringify({ canvas_state: payload.canvas_state, title: payload.title });
         
-        const canvas_state = {
-          blocks: state.blocks,
-          connections: state.connections,
-          stickyNotes: state.stickyNotes,
-          textLabels: state.textLabels,
-          execution: {
-            nodeStates: workflowState.nodeStates,
-            nodeResults: workflowState.nodeResults,
-            currentPhaseIndex: workflowState.currentPhaseIndex,
-            projectPrompt: workflowState.projectPrompt
-          }
-        };
-        
-        await supabase.from('sequences').update({ canvas_state }).eq('id', seqId);
+        if (currentHash === lastSavedHashRef.current) return;
+
+        await supabase.from('sequences').update(payload).eq('id', seqId);
+        lastSavedHashRef.current = currentHash;
+        console.log("[Engine] Auto-save synchronized");
       } catch (err: any) {
         console.error("Auto-save failed", err);
       }
-    }, 2000); // 2-second debounce
+    }, 5000);
 
-    return () => clearTimeout(timer);
-  }, [nodeResults, nodeStates, graphStatus, currentPhaseIndex, projectPrompt]);
+    return () => clearInterval(interval);
+  }, []);
 
 
   const deployedTemplateId = useBuilderStore((state: any) => state.deployedTemplateId);
@@ -263,6 +322,7 @@ const Engine = () => {
     if (!canvas) return;
 
     const onWheel = (e: any) => {
+      if (canvasLocked) { e.preventDefault(); return; }
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         setCamera((prev) => {
@@ -290,7 +350,7 @@ const Engine = () => {
 
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', onWheel);
-  }, []);
+  }, [canvasLocked]);
 
   const getCanvasCoords = useCallback((clientX: any, clientY: any) => {
     return {
@@ -300,28 +360,31 @@ const Engine = () => {
   }, [camera]);
 
   const handleMouseDown = useCallback((e: any) => {
+    if (canvasLocked) return;
     if (e.target.closest('.n8n-node') || e.target.closest('.sticky-note')) return;
 
     if (activeTool === 'cursor') {
-      if (!canvasLocked && (e.button === 1 || (e.button === 0 && e.altKey) || e.target.id === 'canvas-bg')) {
+      if (e.button === 1 || (e.button === 0 && e.altKey) || e.target.id === 'canvas-bg') {
         setIsPanning(true);
         lastMousePos.current = { x: e.clientX, y: e.clientY };
       }
     } else if (activeTool === 'sticky') {
-      if (viewMode === 'builder') return;
       const coords = getCanvasCoords(e.clientX, e.clientY);
-      setStickyNotes((prev: any) => [...prev, { id: Date.now(), x: coords.x, y: coords.y, text: '', color: '#A259FF' }]);
+      const newId = Date.now();
+      setStickyNotes((prev: any) => [...prev, { id: newId, x: coords.x - 120, y: coords.y - 90, text: '', color: '#A259FF', width: 240, height: 180 }]);
       setActiveTool('cursor');
     } else if (activeTool === 'text') {
       const coords = getCanvasCoords(e.clientX, e.clientY);
       setTextLabels(prev => [...prev, { id: Date.now(), x: coords.x, y: coords.y, text: '' }]);
       setActiveTool('cursor');
     } else if (activeTool === 'highlighter') {
+      isDrawingRef.current = true;
       setIsDrawing(true);
       const coords = getCanvasCoords(e.clientX, e.clientY);
+      currentStrokeRef.current = [coords];
       setCurrentStroke([coords]);
     }
-  }, [activeTool, canvasLocked, viewMode, getCanvasCoords]);
+  }, [activeTool, canvasLocked, getCanvasCoords]);
 
   const handleMouseMove = useCallback(
     (e: any) => {
@@ -337,6 +400,8 @@ const Engine = () => {
         const dy = coords.y - draggingAppElement.startMouseY;
         if (draggingAppElement.type === 'sticky') {
           setStickyNotes((prev: any) => prev.map((n: any) => n.id === draggingAppElement.id ? { ...n, x: draggingAppElement.startX + dx, y: draggingAppElement.startY + dy } : n));
+        } else if (draggingAppElement.type === 'label') {
+          setTextLabels((prev: any) => prev.map((l: any) => l.id === draggingAppElement.id ? { ...l, x: draggingAppElement.startX + dx, y: draggingAppElement.startY + dy } : l));
         }
       }
 
@@ -354,52 +419,57 @@ const Engine = () => {
         const dy = e.clientY - lastMousePos.current.y;
         setCamera((prev: any) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
         lastMousePos.current = { x: e.clientX, y: e.clientY };
-      } else if (isDrawing && activeTool === 'highlighter') {
+      } else if (isDrawingRef.current && activeTool === 'highlighter') {
         const coords = getCanvasCoords(e.clientX, e.clientY);
-        setCurrentStroke((prev: any) => [...prev, coords]);
+        currentStrokeRef.current.push(coords);
+        // Throttled state update for rendering
+        if (currentStrokeRef.current.length % 2 === 0) {
+          setCurrentStroke([...currentStrokeRef.current]);
+        }
       }
     },
-    [isPanning, isDrawing, activeTool, getCanvasCoords, draggingAppElement, resizingAppElement]
+    [isPanning, activeTool, getCanvasCoords, draggingAppElement, resizingAppElement]
   );
 
   const handleMouseUp = useCallback(() => {
     if (draggingAppElement) setDraggingAppElement(null);
     if (resizingAppElement) setResizingAppElement(null);
     if (isPanning) setIsPanning(false);
-    if (isDrawing) {
+    if (isDrawingRef.current) {
+      isDrawingRef.current = false;
       setIsDrawing(false);
-      if (currentStroke && currentStroke.length > 0) {
-        const strokeId = Date.now();
-        setStrokes((prev: any) => [...prev, { id: strokeId, points: currentStroke }]);
-        setCurrentStroke(null);
-        
-        setTimeout(() => {
-          setStrokes((prev: any) => prev.filter((s: any) => s.id !== strokeId));
-        }, 2500);
+      if (currentStrokeRef.current.length > 1) {
+        setStrokes((prev: any) => [...prev, { id: Date.now(), points: [...currentStrokeRef.current] }]);
       }
+      currentStrokeRef.current = [];
+      setCurrentStroke(null);
     }
-  }, [isPanning, isDrawing, currentStroke, draggingAppElement, resizingAppElement]);
+  }, [isPanning, draggingAppElement, resizingAppElement]);
 
   const runFullPipeline = useCallback(async () => {
     if (!layout || graphStatus === 'running') return;
     const store = useWorkflowStore.getState();
     
     if (!projectPrompt || projectPrompt.trim() === '') {
-      alert("Please enter a custom project directive in the top bar first!");
+      addToast('info', 'Please enter a project directive in the top bar.');
       return;
     }
 
-    // Update sequence title in Supabase to match the prompt
-    try {
-      const seqId = localStorage.getItem('active_sequence_id');
-      if (seqId && projectPrompt.trim().length > 0) {
-        const newName = projectPrompt.trim().substring(0, 50) + (projectPrompt.trim().length > 50 ? '...' : '');
-        await supabase.from('sequences').update({ name: newName }).eq('id', seqId);
+    // --- PRE-CHECK API KEY ---
+    const seqId = localStorage.getItem('active_sequence_id');
+    if (seqId) {
+      const status = await checkKeyAvailability(seqId);
+      setKeyInfo(status);
+      if (!status.any) {
+        setKeyModalType('NO_KEY');
+        setShowKeyModal(true);
+        return;
       }
-    } catch(err: any) {
-      console.error("Failed to update sequence name", err);
     }
 
+    // Update sequence title in Supabase to match the prompt (handled by autosave)
+    // No explicit call needed here anymore to avoid redundant writes
+    
     store.setGraphStatus('running');
     store.resetExecution(Object.keys(layout)); 
 
@@ -568,48 +638,6 @@ const Engine = () => {
   const renderPipelineSidebarContent = () => {
     if (!selectedNodeId) return null;
 
-    // Sticky note branch
-    if (selectedNodeId.startsWith('sticky-')) {
-      const stickyNote = stickyNotes.find((n: any) => `sticky-${n.id}` === selectedNodeId);
-      const STICKY_COLORS = ['#A259FF', '#46B1FF', '#DEF767', '#FF6A6A', '#FACC15'];
-      return (
-        <div className="flex-1 mt-4 flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mr-1">Accent</span>
-            {STICKY_COLORS.map(color => (
-              <button
-                key={color}
-                title={`Set color to ${color}`}
-                aria-label={`Set color to ${color}`}
-                onClick={() => {
-                  setStickyNotes((prev: any) => prev.map((n: any) => n.id === stickyNote?.id ? { ...n, color } : n));
-                }}
-                className={`color-picker-btn color-${color.replace('#', '')} ${stickyNote?.color === color ? 'is-active' : ''}`}
-              />
-            ))}
-          </div>
-          <textarea
-            className="w-full min-h-[200px] bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 text-sm text-slate-200 leading-relaxed font-secondary resize-none outline-none focus:border-[#A259FF]/40 transition-colors shadow-inner custom-scrollbar"
-            placeholder="Write your insights here..."
-            value={stickyNote?.text || ''}
-            onChange={(e: any) => {
-              setStickyNotes((prev: any) => prev.map((n: any) => n.id === stickyNote?.id ? { ...n, text: e.target.value } : n));
-            }}
-          />
-          <button
-            onClick={() => {
-              setStickyNotes((prev: any) => prev.filter((n: any) => n.id !== stickyNote?.id));
-              selectNode(null);
-            }}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#ff4b4b]/10 border border-[#ff4b4b]/20 text-[#ff4b4b] text-xs font-bold uppercase tracking-widest hover:bg-[#ff4b4b]/20 transition-colors"
-          >
-            <Trash2 size={14} /> Delete Sticky Note
-          </button>
-          <p className="text-[9px] text-slate-600 uppercase tracking-widest text-center">Changes sync to canvas in real-time</p>
-        </div>
-      );
-    }
-
     // Node with AI results
     if (nodeResults && nodeResults[selectedNodeId]?.ui) {
       return (
@@ -721,39 +749,61 @@ const Engine = () => {
                  title="Upload attachment"
                  aria-label="Upload attachment"
                  onChange={(e) => {
-                   const file = e.target.files?.[0];
-                   if (!file) return;
-                   const reader = new FileReader();
-                   reader.onload = (ev: any) => {
-                     setProjectAttachment({ name: file.name, content: ev.target.result, type: file.type });
-                   };
-                   reader.readAsText(file);
-                   e.target.value = '';
-                 }}
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev: any) => {
+                      const content = ev.target.result as string;
+                      setProjectAttachment({ name: file.name, content, type: file.type });
+
+                      // Auto-fill the prompt bar from file content
+                      let extractedPrompt = '';
+                      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                        try {
+                          const json = JSON.parse(content);
+                          extractedPrompt = json.title || json.description || json.prompt || json.name || '';
+                          if (!extractedPrompt && typeof json === 'object') {
+                            extractedPrompt = JSON.stringify(json).substring(0, 200);
+                          }
+                        } catch {
+                          extractedPrompt = content.split('\n').find((l: string) => l.trim().length > 0) || '';
+                        }
+                      } else {
+                        // For .txt, .md — use the first non-empty line as prompt
+                        const lines = content.split('\n').map((l: string) => l.replace(/^#+\s*/, '').trim()).filter((l: string) => l.length > 0);
+                        extractedPrompt = lines[0] || '';
+                      }
+
+                      if (extractedPrompt) {
+                        setProjectPrompt(extractedPrompt.substring(0, 200));
+                      }
+
+                      addToast('success', `File "${file.name}" loaded — prompt auto-filled from content`);
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                  }}
                />
                <button
                  onClick={() => fileInputRef.current?.click()}
                  disabled={graphStatus === 'running'}
                  className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/5 text-slate-400 hover:text-[#46B1FF] hover:border-[#46B1FF]/30 transition-all flex items-center justify-center group"
                  title="Attach context (.txt, .md, .pdf)"
+                 aria-label="Attach context file"
                >
                  <Paperclip size={20} className="group-hover:rotate-12 transition-transform" />
                </button>
 
                <button 
-                 onClick={graphStatus === 'completed' ? rebootSequence : runFullPipeline}
+                 onClick={runFullPipeline}
                  disabled={graphStatus === 'running' || !projectPrompt}
                  className={`h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all ${
-                   graphStatus === 'completed' 
-                     ? 'bg-[#DEF767] text-black shadow-[0_0_30px_rgba(222,247,103,0.3)]' 
-                     : projectPrompt && graphStatus !== 'running' 
-                       ? 'bg-white text-black hover:bg-[#A259FF] hover:text-white shadow-2xl active:scale-95' 
-                       : 'bg-white/5 text-slate-600 cursor-not-allowed'
+                   projectPrompt && graphStatus !== 'running' 
+                     ? 'bg-white text-black hover:bg-[#A259FF] hover:text-white shadow-2xl active:scale-95' 
+                     : 'bg-white/5 text-slate-600 cursor-not-allowed'
                  }`}
                >
-                 {graphStatus === 'completed' ? (
-                   <><RefreshCw size={18} /> Reboot Sequence</>
-                 ) : graphStatus === 'running' ? (
+                 {graphStatus === 'running' ? (
                    <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Orchestrating...</>
                  ) : (
                    <><Play size={18} fill="currentColor" /> Initialize Engine</>
@@ -762,10 +812,38 @@ const Engine = () => {
              </div>
           </div>
 
-          {/* Attachment Chip */}
+          {/* Key Source Indicator */}
+           <div className="flex items-center gap-4 w-full mt-3 px-1">
+             <div 
+               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all ${
+                 keyInfo.activeSource === 'project' 
+                   ? 'bg-[#A259FF]/10 border-[#A259FF]/30 text-[#A259FF] shadow-[0_0_15px_rgba(162,89,255,0.1)]' 
+                   : keyInfo.activeSource === 'global'
+                     ? 'bg-[#46B1FF]/10 border-[#46B1FF]/30 text-[#46B1FF]'
+                     : 'bg-white/5 border-white/10 text-slate-500'
+               }`}
+               onClick={() => {
+                 setKeyModalType('NO_KEY');
+                 setShowKeyModal(true);
+               }}
+             >
+               <Key size={12} />
+               {keyInfo.activeSource === 'project' 
+                 ? `Project Key (••••${keyInfo.project.lastFour})` 
+                 : keyInfo.activeSource === 'global'
+                   ? `Global Key (••••${keyInfo.global.lastFour})`
+                   : 'No API Key Configured'}
+             </div>
+             
+             <div className="text-[10px] text-slate-600 font-medium">
+               Priority: Project Key &gt; Global Key
+             </div>
+           </div>
+
+           {/* Attachment Chip */}
           {projectAttachment && (
             <div className="flex items-center gap-2 w-full mt-3 animate-fade-in">
-              <div className="flex items-center gap-3 bg-[#46B1FF]/10 border border-[#46B1FF]/20 text-[#46B1FF] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider">
+              <div className="flex items-center gap-3 bg-[#46B1FF]/10 border-[#46B1FF]/20 text-[#46B1FF] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider">
                 <Folder size={14} />
                 {projectAttachment.name}
                 <button 
@@ -795,15 +873,34 @@ const Engine = () => {
           setStrokes([]);
           setTextLabels([]);
           setCurrentStroke(null);
+          setProjectAttachment(null);
+          // Also reboot the pipeline state
+          rebootSequence();
+          addToast('info', 'Canvas and pipeline state cleared');
         }}
         onScreenshot={async () => {
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          const shot = await html2canvas(canvas, { backgroundColor: '#0a0a10', useCORS: true });
-          const link = document.createElement('a');
-          link.download = `agentic-flow-canvas-${Date.now()}.png`;
-          link.href = shot.toDataURL();
-          link.click();
+          try {
+            // Use html2canvas on the entire document body for reliable capture
+            const shot = await html2canvas(document.body, { 
+              backgroundColor: '#0a0a10', 
+              useCORS: true,
+              scale: window.devicePixelRatio || 1,
+              logging: false,
+              allowTaint: true,
+              foreignObjectRendering: true,
+            });
+            const link = document.createElement('a');
+            link.download = `agentic-flow-canvas-${Date.now()}.png`;
+            link.href = shot.toDataURL('image/png');
+            link.click();
+            addToast('success', 'Screenshot saved!');
+          } catch (err) {
+            console.error('Screenshot failed:', err);
+            addToast('error', 'Screenshot failed — try again');
+          }
+        }}
+        onLockToggle={(locked) => {
+          addToast(locked ? 'warning' : 'success', locked ? 'Canvas locked — interactions disabled' : 'Canvas unlocked');
         }}
       />
 
@@ -867,22 +964,19 @@ const Engine = () => {
               </defs>
 
               {strokes.map((stroke: any) => (
-                <motion.polyline 
+                <polyline 
                   key={`stroke-${stroke.id}`} 
                   points={stroke.points.map((p: any) => `${p.x},${p.y}`).join(' ')} 
-                  stroke="#A259FF" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" 
+                  stroke="#A259FF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" 
                   fill="none" 
-                  initial={{ opacity: 0.25 }}
-                  animate={{ opacity: 0 }}
-                  transition={{ duration: 0.5, delay: 2.0 }}
-                  style={{ filter: 'blur(3px)' }} 
+                  opacity="0.6"
                 />
               ))}
               {currentStroke && (
                 <polyline 
                   points={currentStroke.map((p: any) => `${p.x},${p.y}`).join(' ')} 
-                  stroke="#A259FF" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" 
-                  fill="none" opacity="0.25" style={{ filter: 'blur(3px)' }} 
+                  stroke="#A259FF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" 
+                  fill="none" opacity="0.6"
                 />
               )}
 
@@ -952,17 +1046,19 @@ const Engine = () => {
               )
             })}
             {/* Sticky Notes */}
-            {viewMode === 'pipeline' && stickyNotes.map((note: any) => {
+            {stickyNotes.map((note: any) => {
               const noteColor = note.color || '#A259FF';
-              const noteW = note.width || 220;
-              const noteH = note.height || 160;
+              const noteW = note.width || 240;
+              const noteH = note.height || 180;
+              const isEditing = editingStickyId === note.id;
 
               return (
               <div key={`sticky-${note.id}`} 
-                className={`absolute sticky-note p-3 rounded-2xl z-30 transition-all font-secondary flex flex-col group shadow-2xl cursor-pointer ${
-                  selectedNodeId === `sticky-${note.id}` ? 'border' : 'border border-transparent'
+                className={`absolute sticky-note p-3 rounded-2xl z-30 transition-shadow font-secondary flex flex-col group shadow-2xl cursor-grab active:cursor-grabbing ${
+                  isEditing ? 'ring-2 ring-offset-2 ring-offset-transparent' : 'border border-transparent hover:border-white/10'
                 }`}
                 onMouseDown={(e: any) => {
+                  if (isEditing) return; // Don't drag while editing
                   if ((e.target as any).classList.contains('resize-handle')) {
                     e.stopPropagation();
                     setResizingAppElement({ type: 'sticky', id: note.id, elemX: note.x, elemY: note.y });
@@ -970,18 +1066,17 @@ const Engine = () => {
                   }
                   if (activeTool === 'cursor') {
                     e.stopPropagation();
-                    selectNode(`sticky-${note.id}`);
                     const coords = getCanvasCoords(e.clientX, e.clientY);
                     setDraggingAppElement({ type: 'sticky', id: note.id, startX: note.x, startY: note.y, startMouseX: coords.x, startMouseY: coords.y });
                   }
                 }}
                 style={{
                   left: note.x, top: note.y, width: noteW, height: noteH,
-                  background: 'rgba(26, 26, 46, 0.75)',
-                  borderColor: selectedNodeId === `sticky-${note.id}` ? noteColor : `${noteColor}40`,
+                  background: 'rgba(26, 26, 46, 0.85)',
+                  borderColor: isEditing ? noteColor : `${noteColor}40`,
                   backdropFilter: 'blur(16px)',
-                  pointerEvents: activeTool === 'cursor' ? 'auto' : 'none',
-                  boxShadow: selectedNodeId === `sticky-${note.id}` ? `0 0 30px ${noteColor}40` : `0 10px 30px rgba(0,0,0,0.5)`,
+                  pointerEvents: 'auto',
+                  boxShadow: isEditing ? `0 0 40px ${noteColor}50` : `0 10px 30px rgba(0,0,0,0.5)`,
                 }}>
                 <div className="w-full h-1.5 rounded-t-xl absolute top-0 left-0" style={{ background: `linear-gradient(to right, ${noteColor}, ${noteColor}80)` }} />
                 
@@ -991,9 +1086,7 @@ const Engine = () => {
                   onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setStickyNotes(prev => prev.filter(n => n.id !== note.id));
-                    if (selectedNodeId === `sticky-${note.id}`) {
-                      useWorkflowStore.getState().selectNode(null);
-                    }
+                    if (editingStickyId === note.id) setEditingStickyId(null);
                   }}
                   className="absolute top-3 right-3 p-1.5 rounded-lg bg-black/60 text-slate-400 hover:text-white hover:bg-[#ff4b4b] transition-all opacity-0 group-hover:opacity-100 z-50 shadow-md"
                 >
@@ -1005,6 +1098,31 @@ const Engine = () => {
                   placeholder="Note insights here..."
                   value={note.text}
                   onMouseDown={e => e.stopPropagation()}
+                  onFocus={() => {
+                    // Auto-zoom to this sticky note
+                    preFocusCamera.current = { ...camera };
+                    setEditingStickyId(note.id);
+                    const canvasEl = canvasRef.current;
+                    if (canvasEl) {
+                      const rect = canvasEl.getBoundingClientRect();
+                      const targetZoom = 1.0;
+                      const centerX = rect.width / 2 - (note.x + noteW / 2) * targetZoom;
+                      const centerY = rect.height / 2 - (note.y + noteH / 2) * targetZoom;
+                      setCamera({ x: centerX, y: centerY, zoom: targetZoom });
+                    }
+                  }}
+                  onBlur={() => {
+                    if (preFocusCamera.current) {
+                      setCamera(preFocusCamera.current);
+                      preFocusCamera.current = null;
+                    }
+                    setEditingStickyId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      (e.target as HTMLTextAreaElement).blur();
+                    }
+                  }}
                   onChange={(e) => {
                     setStickyNotes(prev => prev.map(n => n.id === note.id ? { ...n, text: e.target.value } : n));
                   }}
@@ -1023,17 +1141,52 @@ const Engine = () => {
             })}
 
             {/* Text Labels */}
-            {textLabels.map(label => (
+            {textLabels.map(label => {
+              const isEditing = editingLabelId === label.id;
+              return (
               <div
                 key={`label-${label.id}`}
-                className="absolute z-20 pointer-events-auto group"
+                className="absolute z-20 pointer-events-auto group cursor-grab active:cursor-grabbing"
                 style={{ left: label.x - 75, top: label.y - 15 }}
+                onMouseDown={(e: any) => {
+                  if (isEditing) return;
+                  if (e.target.tagName === 'INPUT') return;
+                  e.stopPropagation();
+                  const coords = getCanvasCoords(e.clientX, e.clientY);
+                  setDraggingAppElement({ type: 'label', id: label.id, startX: label.x, startY: label.y, startMouseX: coords.x, startMouseY: coords.y });
+                }}
               >
                 <input
-                  className="bg-transparent outline-none text-white text-sm font-bold w-[150px] placeholder-slate-500 border-b border-dashed border-white/20 focus:border-[#46B1FF]/50 pb-1 transition-colors"
+                  className={`bg-transparent outline-none text-white font-bold w-[150px] placeholder-slate-500 border-b border-dashed pb-1 transition-all ${
+                    isEditing ? 'text-lg border-[#46B1FF]/80' : 'text-sm border-white/20 focus:border-[#46B1FF]/50'
+                  }`}
                   placeholder="Type label..."
                   value={label.text}
                   onMouseDown={e => e.stopPropagation()}
+                  onFocus={() => {
+                    preFocusCamera.current = { ...camera };
+                    setEditingLabelId(label.id);
+                    const canvasEl = canvasRef.current;
+                    if (canvasEl) {
+                      const rect = canvasEl.getBoundingClientRect();
+                      const targetZoom = 1.0;
+                      const centerX = rect.width / 2 - label.x * targetZoom;
+                      const centerY = rect.height / 2 - label.y * targetZoom;
+                      setCamera({ x: centerX, y: centerY, zoom: targetZoom });
+                    }
+                  }}
+                  onBlur={() => {
+                    if (preFocusCamera.current) {
+                      setCamera(preFocusCamera.current);
+                      preFocusCamera.current = null;
+                    }
+                    setEditingLabelId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Escape') {
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
                   onChange={(e) => {
                     setTextLabels(prev => prev.map(l => l.id === label.id ? { ...l, text: e.target.value } : l));
                   }}
@@ -1045,7 +1198,8 @@ const Engine = () => {
                   ✕
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -1076,7 +1230,6 @@ const Engine = () => {
         </div>
         )}
       </div>
-      <FlowFooter flowStatus={graphStatus === 'loading' ? 'running' : 'idle'} logs={[]} completedCount={0} totalCount={16} />
 
       {/* View Results Button - appears when completed */}
       {graphStatus === 'completed' && (
@@ -1090,6 +1243,190 @@ const Engine = () => {
       )}
 
       <OutputScreen isOpen={showOutputScreen} onClose={() => setShowOutputScreen(false)} />
+      {/* Toast System */}
+      <ToastContainer />
+
+      {/* API Key Modal */}
+      <AnimatePresence>
+        {showKeyModal && (
+          <ApiKeyModal 
+            type={keyModalType} 
+            onClose={() => setShowKeyModal(false)} 
+            onSaved={() => {
+              const seqId = localStorage.getItem('active_sequence_id');
+              if (seqId) checkKeyAvailability(seqId).then(setKeyInfo);
+              setShowKeyModal(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ── API Key Modal Component ──────────────────────────────────────
+const ApiKeyModal = ({ type, onClose, onSaved }: { type: string, onClose: () => void, onSaved: () => void }) => {
+  const [key, setKey] = useState('');
+  const [scope, setScope] = useState<'project' | 'global'>('project');
+  const [showKey, setShowKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const addToast = useToastStore(s => s.addToast);
+
+  const handleSave = async () => {
+    if (!key.trim()) return;
+    setSaving(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const seqId = localStorage.getItem('active_sequence_id');
+      const endpoint = scope === 'project' ? '/api/keys/save-project' : '/api/keys/save';
+      const payload = scope === 'project' 
+        ? { userId: session.user.id, sequenceId: seqId, apiKey: key.trim() }
+        : { userId: session.user.id, apiKey: key.trim() };
+
+      const res = await fetch(`http://localhost:3001${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Failed to save key');
+
+      addToast('success', `API Key saved ${scope === 'project' ? 'for this project' : 'globally'}`);
+      onSaved();
+    } catch (err: any) {
+      addToast('error', err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const titles: Record<string, string> = {
+    NO_KEY: 'API Key Required',
+    INVALID_KEY: 'Invalid API Key',
+    RATE_LIMIT: 'Rate Limit Reached'
+  };
+
+  const descriptions: Record<string, string> = {
+    NO_KEY: 'An API key is required to orchestrate this neural sequence. Choose how you want to store it.',
+    INVALID_KEY: 'The provided key was rejected by the provider. Please enter a valid OpenRouter or LLM API key.',
+    RATE_LIMIT: 'The current key is being rate limited. You can wait or provide a new key for this project.'
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+      />
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-md bg-[#0a0a0f] border border-white/10 rounded-[32px] p-8 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden"
+      >
+        {/* Glow decoration */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#A259FF]/20 blur-[60px] rounded-full" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#A259FF] to-[#46B1FF] flex items-center justify-center text-white shadow-lg">
+              <Key size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white font-display tracking-tight">{titles[type]}</h3>
+              <p className="text-xs text-slate-500 font-medium">Neural Conductor Authentication</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-400 leading-relaxed mb-8">
+            {descriptions[type]}
+          </p>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">API Key</label>
+              <div className="relative group">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 pl-5 pr-12 text-sm text-white focus:border-[#A259FF]/50 outline-none transition-all placeholder:text-slate-700"
+                />
+                <button
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors"
+                  title={showKey ? "Hide key" : "Show key"}
+                  aria-label={showKey ? "Hide key" : "Show key"}
+                >
+                  {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setScope('project')}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
+                  scope === 'project' 
+                    ? 'bg-[#A259FF]/10 border-[#A259FF]/40 text-white' 
+                    : 'bg-white/[0.02] border-white/5 text-slate-500 hover:border-white/10'
+                }`}
+              >
+                <ShieldCheck size={20} className={scope === 'project' ? 'text-[#A259FF]' : ''} />
+                <span className="text-[10px] font-black uppercase tracking-wider">Project Only</span>
+              </button>
+              <button
+                onClick={() => setScope('global')}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
+                  scope === 'global' 
+                    ? 'bg-[#46B1FF]/10 border-[#46B1FF]/40 text-white' 
+                    : 'bg-white/[0.02] border-white/5 text-slate-500 hover:border-white/10'
+                }`}
+              >
+                <Globe size={20} className={scope === 'global' ? 'text-[#46B1FF]' : ''} />
+                <span className="text-[10px] font-black uppercase tracking-wider">Global Use</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+              <InfoIcon size={16} className="text-slate-600 shrink-0" />
+              <p className="text-[10px] text-slate-500 leading-normal">
+                {scope === 'project' 
+                  ? 'Project keys are encrypted and stored specifically for this neural sequence.' 
+                  : 'Global keys are saved to your profile and used as a fallback for all your sequences.'}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={onClose}
+                className="flex-1 py-4 rounded-2xl border border-white/10 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !key.trim()}
+                className="flex-[2] py-4 rounded-2xl bg-white text-black text-xs font-black uppercase tracking-widest hover:bg-[#DEF767] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl active:scale-95 flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  'Authorize Access'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };

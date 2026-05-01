@@ -1,43 +1,42 @@
-import React from 'react';
-import { ChevronLeft, GitMerge, LayoutGrid, Layers } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, GitMerge, LayoutGrid, Play, Loader2, LayoutDashboard } from 'lucide-react';
 import { useBuilderStore } from '../lib/builderStore';
 import { useWorkflowStore } from '../lib/store';
 import { supabase } from '../lib/supabaseClient';
 
 const FlowHeader = () => {
-  const { viewMode, setViewMode } = useBuilderStore();
+  const { viewMode, setViewMode, blocks } = useBuilderStore();
+  const [isDeploying, setIsDeploying] = useState(false);
 
-  const handleSave = async () => {
-    const sequenceId = localStorage.getItem('active_sequence_id');
-    if (!sequenceId) return alert('No active sequence ID found. Cannot save.');
+  const handleInitializeEngine = async () => {
+    setIsDeploying(true);
     
-    const state = useBuilderStore.getState();
-    const workflowState: any = useWorkflowStore.getState();
-    const canvas_state = {
-      blocks: state.blocks,
-      connections: state.connections,
-      stickyNotes: state.stickyNotes,
-      textLabels: state.textLabels,
-      execution: {
-        nodeStates: workflowState.nodeStates,
-        nodeResults: workflowState.nodeResults,
-        currentPhaseIndex: workflowState.currentPhaseIndex,
-        projectPrompt: workflowState.projectPrompt
-      }
-    };
+    // Zoom out canvas elements visually
+    const canvasRef = document.getElementById('builder-canvas-area');
+    if (canvasRef) canvasRef.classList.add('scale-75', 'opacity-0', 'transition-all', 'duration-1000');
     
-    try {
-      const { error } = await supabase
-        .from('sequences')
-        .update({ canvas_state, updated_at: new Date().toISOString() })
-        .eq('id', sequenceId);
-        
-      if (error) throw error;
-      alert('Canvas state saved successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to save state');
-    }
+    // Gradient Pulse transition effect portal hook
+    const transitionOverlay = document.createElement('div');
+    transitionOverlay.className = "fixed inset-0 z-[150] bg-gradient-to-r from-cyan-500/0 via-purple-500/20 to-cyan-500/0 backdrop-blur-3xl animate-fade-in pointer-events-none flex flex-col items-center justify-center";
+    transitionOverlay.innerHTML = `<h1 class="text-4xl font-display font-black text-white mix-blend-overlay tracking-widest uppercase shadow-black drop-shadow-xl animate-pulse">Compiling Neural Path...</h1>`;
+    document.body.appendChild(transitionOverlay);
+
+    // Save configuration
+    const templateName = blocks.length > 0 ? blocks[0].name : "Custom Builder Flow";
+    useBuilderStore.getState().deployProject(templateName);
+
+    // Simulate compilation network propagation
+    await new Promise(r => setTimeout(r, 2500));
+    
+    // Remove Overlay
+    document.body.removeChild(transitionOverlay);
+    setIsDeploying(false);
+    
+    // Clear styles
+    if (canvasRef) canvasRef.classList.remove('scale-75', 'opacity-0');
+    
+    // Redirect to pipeline natively
+    setViewMode('pipeline');
   };
 
   return (
@@ -50,20 +49,18 @@ const FlowHeader = () => {
         {/* Return to Hub */}
         <a 
           href="/dashboard"
-          className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 text-gray-400 transition-all duration-300 hover:border-[#A259FF]/50 hover:text-white hover:bg-white/10 group shadow-lg"
-          title="Return to Hub"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] backdrop-blur-md border border-white/10 text-gray-400 transition-all duration-300 hover:border-[#A259FF]/50 hover:text-white hover:bg-white/10 shadow-lg text-[11px] font-black uppercase tracking-wider group"
+          title="Return to Dashboard"
+          aria-label="Return to Dashboard"
         >
-          <ChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+          <LayoutDashboard size={16} className="group-hover:scale-110 transition-transform" />
+          <span>Dashboard</span>
         </a>
 
         {/* Logo */}
         <div className="flex items-center gap-4">
           <div
-            className="w-10 h-10 rounded-[14px] flex items-center justify-center shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #A259FF 0%, #46B1FF 100%)',
-              boxShadow: '0 8px 24px rgba(162, 89, 255, 0.3)',
-            }}
+            className="w-10 h-10 rounded-[14px] flex items-center justify-center shadow-lg logo-gradient-box"
           >
             <img 
               src="/logo.png" 
@@ -75,12 +72,7 @@ const FlowHeader = () => {
             <h1 className="text-[18px] font-black tracking-tight text-white font-display leading-tight">
               Agentic<span className="text-[#A259FF]">Flow</span>
             </h1>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-500">
-                Neuro-Orchestration
-              </span>
-              <div className="w-1 h-1 rounded-full bg-[#A259FF] animate-pulse" />
-            </div>
+
           </div>
         </div>
       </div>
@@ -109,15 +101,18 @@ const FlowHeader = () => {
         </button>
       </div>
 
-      {/* Right: Save Action */}
+      {/* Right: Action */}
       <div className="flex items-center gap-4 flex-shrink-0">
-        <button
-          onClick={handleSave}
-          className="bg-white/5 border border-white/10 hover:border-[#DEF767]/50 hover:bg-[#DEF767]/10 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
-        >
-          <Layers size={14} className="text-[#DEF767]" />
-          Save Configuration
-        </button>
+        {viewMode === 'builder' && (
+          <button 
+            onClick={handleInitializeEngine}
+            disabled={isDeploying || blocks.length === 0}
+            className={`bg-gradient-to-r from-[#A259FF] to-[#6c39b3] text-white px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(162,89,255,0.4)] ${isDeploying ? 'opacity-80 scale-95 cursor-wait' : 'hover:scale-105'}`}
+          >
+            {isDeploying ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {isDeploying ? 'Deploying...' : 'Initialize Engine'}
+          </button>
+        )}
       </div>
     </header>
   );

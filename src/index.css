@@ -66,6 +66,11 @@ h1, h2, h3, .font-display {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.logo-gradient-box {
+  background: linear-gradient(135deg, #A259FF 0%, #46B1FF 100%);
+  box-shadow: 0 8px 24px rgba(162, 89, 255, 0.3);
+}
+
 /* ── n8n Inspired Nodes ─────────────────────────────────────────── */
 .n8n-node {
   background: rgba(12, 12, 18, 0.95);

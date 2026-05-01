@@ -33,6 +33,39 @@ export async function getKeyStatus() {
 }
 
 /**
+ * Check if a project-scoped key exists.
+ */
+export async function getProjectKeyStatus(sequenceId: string) {
+  const userId = await getCurrentUserId();
+  if (!userId || !sequenceId) return { hasKey: false };
+
+  try {
+    const res = await fetch(`http://localhost:3001/api/keys/project-status/${userId}/${sequenceId}`);
+    const data = await res.json();
+    return { hasKey: data.hasKey, lastFour: data.lastFour };
+  } catch {
+    return { hasKey: false };
+  }
+}
+
+/**
+ * High-level pre-check for key availability.
+ */
+export async function checkKeyAvailability(sequenceId: string) {
+  const [projectStatus, globalStatus] = await Promise.all([
+    getProjectKeyStatus(sequenceId),
+    getKeyStatus()
+  ]);
+
+  return {
+    any: projectStatus.hasKey || globalStatus.any,
+    project: projectStatus,
+    global: globalStatus,
+    activeSource: projectStatus.hasKey ? 'project' : globalStatus.any ? 'global' : 'none'
+  };
+}
+
+/**
  * Call the local Node.js Backend Server API.
  * The server resolves the API key from encrypted storage using the userId.
  * @param {string} userTask - The overarching project goal / prompt
@@ -65,6 +98,7 @@ export async function callLLM(userTask: any, agent: any, neuralContext: any = ''
   const API_URL = 'http://localhost:3001/api/llm';
 
   try {
+    const sequenceId = localStorage.getItem('active_sequence_id');
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -72,17 +106,21 @@ export async function callLLM(userTask: any, agent: any, neuralContext: any = ''
         userTask: enrichedTask,
         agent,
         neuralContext,
-        userId, // Server resolves the encrypted key using this
+        userId, 
+        sequenceId, // Added for project-scoped key resolution
       }),
     });
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => null);
 
-      // If the server reports a key error, dispatch a global event
+      // If the server reports a key error, dispatch a global event with type classification
       if (errorPayload?._keyError) {
         window.dispatchEvent(new CustomEvent('agentic:key-error', {
-          detail: { message: errorPayload.content },
+          detail: { 
+            type: errorPayload._errorType || 'INVALID_KEY',
+            message: errorPayload.content 
+          },
         }));
       }
 

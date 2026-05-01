@@ -199,7 +199,7 @@ export default function Dashboard() {
       <aside className="w-72 shrink-0 border-r border-white/[0.03] bg-[#0c0c12]/60 backdrop-blur-3xl flex flex-col z-20">
         <div className="p-8 mb-4">
           <div className="flex items-center gap-6">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#A259FF] to-[#46B1FF] shadow-[0_8px_24px_rgba(162,89,255,0.2)] flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl shadow-lg flex items-center justify-center shrink-0 logo-gradient-box">
               <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
             </div>
             <h1 className="text-2xl font-black text-white font-display tracking-tight">
