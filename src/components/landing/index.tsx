@@ -8,6 +8,7 @@ import { Pricing } from './Pricing';
 import { LivePipelinePreview } from './LivePipelinePreview';
 import { RegisterView } from './RegisterView';
 import { ProfileView } from './ProfileView';
+import { DocumentationView } from './DocumentationView';
 import { useAuth } from '../../lib/auth';
 
 // Helper icon
@@ -20,7 +21,7 @@ const StarIcon = () => (
 export default function LandingPage() {
   const navigate = useNavigate();
   const [view, setView] = useState('landing');
-  
+
   // Get user state directly from Context
   const { user, signOut } = useAuth();
 
@@ -41,9 +42,26 @@ export default function LandingPage() {
     setView('landing');
   };
 
+  const handleNav = (target: string) => {
+    if (target.startsWith('#')) {
+      if (view !== 'landing') {
+        setView('landing');
+        setTimeout(() => {
+          document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      setView(target);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="h-screen w-full bg-[#030303] text-zinc-300 font-sans selection:bg-zinc-800 selection:text-white overflow-y-auto overflow-x-hidden relative">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes float {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-8px); }
@@ -51,9 +69,10 @@ export default function LandingPage() {
         @keyframes dash {
           to { stroke-dashoffset: -1000; }
         }
+        html { scroll-behavior: smooth; }
       `}} />
-      
-      <Navbar user={user} setView={setView} onInit={handleInit} />
+
+      <Navbar user={user} onNavigate={handleNav} onInit={handleInit} />
 
       {view === 'landing' && (
         <div className="flex flex-col w-full">
@@ -70,7 +89,7 @@ export default function LandingPage() {
                 Design Multi-Agent <br />
                 Pipelines Visually.
               </h1>
-              
+
               <p className="text-lg md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed font-light mb-12">
                 The premium neuro-orchestration platform. Connect, configure, and execute complex autonomous agent architectures with unprecedented control.
               </p>
@@ -103,7 +122,7 @@ export default function LandingPage() {
                 <p className="text-zinc-400 text-lg mb-10 leading-relaxed font-light">
                   Observe active orchestrations in real-time. AgenticFlow meticulously logs system states, computes resource allocation, and tracks synthesis outputs securely in-memory.
                 </p>
-                
+
                 <ul className="space-y-5">
                   {['Real-time telemetry and compute metrics', 'Cryptographically secure in-memory key storage', 'Immutable activity and artifact logging'].map((item, i) => (
                     <li key={i} className="flex items-center text-zinc-300 font-light">
@@ -115,15 +134,15 @@ export default function LandingPage() {
                   ))}
                 </ul>
               </div>
-              
+
               <div className="lg:w-1/2 w-full relative group">
                 <div className="absolute -inset-6 bg-gradient-to-tr from-zinc-800/30 to-zinc-600/30 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-700"></div>
-                <img 
-                  src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80" 
-                  alt="Data Streams" 
+                <img
+                  src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80"
+                  alt="Data Streams"
                   className="absolute -inset-4 w-[calc(100%+2rem)] h-[calc(100%+2rem)] object-cover rounded-[2rem] opacity-20 grayscale mix-blend-overlay group-hover:opacity-40 transition-opacity duration-700"
                 />
-                
+
                 <div className="bg-[#0A0A0A]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 shadow-2xl relative overflow-hidden z-10">
                   <div className="flex items-center px-4 py-3 border-b border-white/5 mb-2 gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-zinc-800 border border-zinc-700"></div>
@@ -143,7 +162,7 @@ export default function LandingPage() {
                         ))}
                       </div>
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-6">
                         <div className="text-sm font-medium text-zinc-200">Active Sequences</div>
@@ -153,12 +172,12 @@ export default function LandingPage() {
                         {[1, 2].map((card) => (
                           <div key={card} className="bg-[#111] border border-white/[0.05] rounded-xl p-5 hover:bg-[#141414] transition-colors group">
                             <div className="flex justify-between items-start mb-5">
-                              <h4 className="text-zinc-200 font-medium text-sm tracking-tight">Algorithmic Trade <br/> Analysis v2</h4>
+                              <h4 className="text-zinc-200 font-medium text-sm tracking-tight">Algorithmic Trade <br /> Analysis v2</h4>
                               <StarIcon />
                             </div>
                             <div className="flex justify-between items-center text-[0.65rem] font-mono text-zinc-500">
                               <span className="text-zinc-300 flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
-                                <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 shadow-[0_0_5px_rgba(255,255,255,0.8)] animate-pulse"></div> 
+                                <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 shadow-[0_0_5px_rgba(255,255,255,0.8)] animate-pulse"></div>
                                 EXECUTING
                               </span>
                               <span>T - 12 SEC</span>
@@ -185,7 +204,7 @@ export default function LandingPage() {
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-zinc-700/10 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <div className="lg:w-1/2 relative z-10 text-center lg:text-left flex flex-col">
-                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-zinc-100 mb-8 tracking-tight leading-tight">Ready to <br/>deploy?</h2>
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-zinc-100 mb-8 tracking-tight leading-tight">Ready to <br />deploy?</h2>
                   <p className="text-zinc-400 mb-12 text-lg font-light max-w-xl mx-auto lg:mx-0 leading-relaxed">
                     Elevate your operational capacity. Architect intelligent, autonomous systems with AgenticFlow today.
                   </p>
@@ -200,22 +219,22 @@ export default function LandingPage() {
                 <div className="lg:w-1/2 relative z-10 w-full group mt-16 lg:mt-0">
                   <div className="absolute -inset-4 bg-gradient-to-tr from-zinc-600/20 to-zinc-400/20 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-700"></div>
                   <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl transform lg:rotate-2 group-hover:rotate-0 transition-transform duration-700 bg-[#111]">
-                     <img 
-                       src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80" 
-                       alt="Abstract Deployment Visualization" 
-                       className="w-full h-[300px] lg:h-[400px] object-cover opacity-100 group-hover:scale-105 transition-transform duration-700" 
-                     />
-                     <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent opacity-90"></div>
-                     
-                     <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-                        <div className="flex items-center gap-3 bg-black/80 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-lg shadow-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></div>
-                          <span className="text-[0.65rem] font-mono text-zinc-100 tracking-widest font-bold">SYSTEM READY</span>
-                        </div>
-                        <div className="bg-black/80 backdrop-blur-md border border-white/20 p-2.5 rounded-lg shadow-lg">
-                          <Activity className="w-4 h-4 text-zinc-300" />
-                        </div>
-                     </div>
+                    <img
+                      src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80"
+                      alt="Abstract Deployment Visualization"
+                      className="w-full h-[300px] lg:h-[400px] object-cover opacity-100 group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent opacity-90"></div>
+
+                    <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                      <div className="flex items-center gap-3 bg-black/80 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-lg shadow-lg">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></div>
+                        <span className="text-[0.65rem] font-mono text-zinc-100 tracking-widest font-bold">SYSTEM READY</span>
+                      </div>
+                      <div className="bg-black/80 backdrop-blur-md border border-white/20 p-2.5 rounded-lg shadow-lg">
+                        <Activity className="w-4 h-4 text-zinc-300" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -232,10 +251,10 @@ export default function LandingPage() {
                 <span className="text-lg font-medium text-zinc-200 tracking-tight">Agentic<span className="text-zinc-600">Flow</span></span>
               </div>
               <div className="flex flex-wrap justify-center gap-10 text-sm text-zinc-500 font-light">
-                <a href="#" className="hover:text-zinc-200 transition-colors">Platform</a>
-                <a href="#" className="hover:text-zinc-200 transition-colors">Enterprise</a>
-                <a href="#" className="hover:text-zinc-200 transition-colors">Documentation</a>
-                <a href="#" className="hover:text-zinc-200 transition-colors">Legal</a>
+                <button onClick={() => handleNav('#features')} className="hover:text-zinc-200 transition-colors">Platform</button>
+                <button onClick={() => handleNav('#pricing')} className="hover:text-zinc-200 transition-colors">Enterprise</button>
+                <button onClick={() => handleNav('documentation')} className="hover:text-zinc-200 transition-colors">Documentation</button>
+                <button className="hover:text-zinc-200 transition-colors cursor-not-allowed">Legal</button>
               </div>
             </div>
           </footer>
@@ -244,6 +263,7 @@ export default function LandingPage() {
 
       {view === 'register' && <RegisterView onRegister={handleRegister} />}
       {view === 'profile' && <ProfileView user={user} onLogout={handleLogout} />}
+      {view === 'documentation' && <DocumentationView onInit={handleInit} />}
     </div>
   );
 }
