@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './lib/auth';
+import { AnimatePresence } from 'framer-motion';
+import OnboardingTour, { useOnboardingStatus } from './components/OnboardingTour';
 
 // Route-level code splitting — each page loads on demand
 const LandingPage = lazy(() => import('./components/landing/index'));
@@ -18,8 +20,10 @@ const PageLoader = () => (
 );
 
 export default function App() {
+  const { showOnboarding, completeOnboarding, user } = useOnboardingStatus();
+
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-indigo-500/30 selection:text-white">
+    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-indigo-500/30 selection:text-white relative">
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public route — Landing Page */}
@@ -31,6 +35,10 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         </Routes>
       </Suspense>
+
+      <AnimatePresence>
+        {showOnboarding && <OnboardingTour onComplete={completeOnboarding} user={user} />}
+      </AnimatePresence>
     </div>
   );
 }

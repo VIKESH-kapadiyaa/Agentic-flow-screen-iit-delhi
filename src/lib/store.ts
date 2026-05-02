@@ -18,6 +18,8 @@ export const useWorkflowStore = create<any>((set, get) => ({
   // Master Project Input
   projectPrompt: '',
   setProjectPrompt: (prompt: any) => set({ projectPrompt: prompt }),
+  flowTitle: '',
+  setFlowTitle: (title: string) => set({ flowTitle: title }),
   projectAttachment: null, // { name, content, type }
   setProjectAttachment: (attachment: any) => set({ projectAttachment: attachment }),
 

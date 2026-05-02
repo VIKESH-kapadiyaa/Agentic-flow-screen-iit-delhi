@@ -65,7 +65,7 @@ export default function Dashboard() {
     
     const newSeq = {
       user_id: user.id,
-      title: 'New Neural Sequence',
+      title: 'Untitled Flow',
       status: 'Idle',
       status_color: '#46B1FF',
       agents_active: 0,
@@ -233,7 +233,7 @@ export default function Dashboard() {
           </div>
 
           {/* Project Spaces Section */}
-          <div className="space-y-1">
+          <div className="space-y-1" data-tour="folders-sidebar">
             <div className="flex items-center justify-between ml-4 mb-4">
               <span className="text-[10px] uppercase tracking-[0.25em] text-slate-600 font-black">Project Spaces</span>
               <button 
@@ -343,6 +343,7 @@ export default function Dashboard() {
               <User size={20} />
             </button>
             <button 
+               data-tour="create-flow-btn"
                onClick={handleNewFlow}
                className="bg-white text-black px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-[#DEF767] transition-all hover:-translate-y-1 shadow-[0_10px_30px_rgba(255,255,255,0.1)] active:scale-95"
             >

@@ -57,22 +57,27 @@ const FlowHeader = () => {
           <span>Dashboard</span>
         </a>
 
-        {/* Logo */}
-        <div className="flex items-center gap-4">
-          <div
-            className="w-10 h-10 rounded-[14px] flex items-center justify-center shadow-lg logo-gradient-box"
-          >
-            <img 
-              src="/logo.png" 
-              alt="Logo" 
-              className="w-7 h-7 object-contain" 
-            />
+        {/* Logo and Title */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 border-r border-white/10 pr-6">
+            <div className="w-10 h-10 rounded-[14px] flex items-center justify-center shadow-lg logo-gradient-box">
+              <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-black tracking-tight text-white font-display leading-tight">
+                Agentic<span className="text-[#A259FF]">Flow</span>
+              </h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-[18px] font-black tracking-tight text-white font-display leading-tight">
-              Agentic<span className="text-[#A259FF]">Flow</span>
-            </h1>
-
+          
+          <div className="flex items-center group">
+            <input 
+              type="text"
+              value={useWorkflowStore(state => state.flowTitle) || ''}
+              onChange={(e) => useWorkflowStore.getState().setFlowTitle(e.target.value)}
+              placeholder="Untitled Flow"
+              className="bg-transparent border-none outline-none text-sm font-medium text-zinc-300 placeholder-zinc-600 focus:text-white transition-colors w-48 focus:w-64"
+            />
           </div>
         </div>
       </div>
@@ -80,6 +85,7 @@ const FlowHeader = () => {
       {/* Center: View Toggles */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-[4rem] bg-white/[0.02] border border-white/[0.05] py-2 px-8 rounded-3xl shadow-xl backdrop-blur-xl">
         <button
+          data-tour="pipeline-toggle"
           onClick={() => setViewMode('pipeline')}
           className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
             viewMode === 'pipeline' 
